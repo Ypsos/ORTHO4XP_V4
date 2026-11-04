@@ -193,6 +193,52 @@ def _L(fr, en):
         return en
 
 
+def _zone_sources_without_data(lat, lon, zone_list, mask_zl=None):
+    """Garde-fou zones ZL : liste des sources (providers combines .comb)
+    utilisees par des zones et qui n'ont AUCUNE couche couvrant la tuile.
+    Reprend exactement le test du moteur a l'etape 3
+    (IMG.initialize_local_combined_providers_dict) : sans couche couvrante,
+    l'etape 3 s'arrete (« did not contained data for this tile »).
+    Retour : [(source, nombre_de_zones), ...]. Lecture seule, fail-open :
+    en cas de doute ou d'erreur -> [] (aucun message)."""
+    try:
+        counts = {}
+        for z in (zone_list or []):
+            try:
+                code = z[2]
+            except Exception:
+                continue
+            if code:
+                counts[code] = counts.get(code, 0) + 1
+        bad = []
+        bbox = (lon, lat + 1, lon + 1, lat)
+        for code in sorted(counts):
+            if code not in IMG.combined_providers_dict:
+                continue  # source simple (.lay) : pas testee ici par le moteur
+            ok = False
+            for rlayer in IMG.combined_providers_dict[code]:
+                if rlayer.get("priority") == "mask" and not mask_zl:
+                    ok = True  # mask_zl inconnu -> doute -> pas de message
+                    break
+                is_mask_layer = (
+                    (lat, lon, int(mask_zl))
+                    if rlayer.get("priority") == "mask"
+                    else False
+                )
+                try:
+                    if IMG.has_data(bbox, rlayer["extent_code"], is_mask_layer):
+                        ok = True
+                        break
+                except Exception:
+                    ok = True  # doute -> on ne previent pas
+                    break
+            if not ok:
+                bad.append((code, counts[code]))
+        return bad
+    except Exception:
+        return []
+
+
 class Ortho4XP_GUI(tk.Tk):
 
     zl_list = ["12", "13", "14", "15", "16", "17", "18"]
@@ -2555,6 +2601,16 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
                                 "zone / Apply)." % _back))
         except Exception as e:
             UI.vprint(1, "   WARNING zones:", e)
+        # Par defaut, « Source : » reprend le provider choisi dans Imagery
+        # (fenetre principale) : le chargement des zones y avait laisse la
+        # source de la derniere zone. La liste reste modifiable ; les zones
+        # deja dessinees gardent leur propre source.
+        try:
+            _img = str(self.parent.default_website.get() or "")
+            if _img:
+                self.zmap_combo.set(_img)
+        except Exception:
+            pass
         self._zones_loaded = True
         # ── Overlay aeroports via Overpass ────────────────────────────────
         self._airports_pending = []
@@ -4222,6 +4278,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             self.save_zone_cmd(_write=False)
         zone_list = self._current_zone_list()
         CFG.zone_list = zone_list
+        _mzl = None
         # Sauvegarde dans le fichier .cfg de la tuile
         # → les zones sont rechargées au prochain démarrage
         # → makedirs garantit que le dossier existe même avant le premier build
@@ -4235,6 +4292,10 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             if _tile_cfg_exists(tile):
                 tile.read_from_config()
             tile.zone_list = zone_list
+            try:
+                _mzl = int(tile.mask_zl)
+            except Exception:
+                _mzl = None
             # mesh_zl doit couvrir le ZL le plus eleve des zones
             try:
                 _zmax = max([int(z[1]) for z in zone_list] or [0])
@@ -4261,7 +4322,29 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             UI.vprint(1, tr("Zones sauvegardées dans cfg tuile ") + f"{self.lat},{self.lon}")
         except Exception as e:
             UI.vprint(0, tr("Avertissement save_zone_list: ") + str(e))
+        self._warn_zone_sources(zone_list, _mzl)
         return
+
+    def _warn_zone_sources(self, zone_list, mask_zl=None):
+        """Garde-fou : ligne dans le journal (aucune fenetre) si la source
+        d'une zone n'a pas d'images sur cette tuile (l'etape 3 s'arreterait)."""
+        try:
+            bad = _zone_sources_without_data(
+                int(self.lat), int(self.lon), zone_list, mask_zl)
+            if not bad:
+                return
+            tname = "%+03d%+04d" % (int(self.lat), int(self.lon))
+            UI.vprint(0, _L(
+                "ATTENTION zones : la source ", "WARNING zones: source ")
+                + ", ".join("%s (%d zone(s))" % (c, n) for (c, n) in bad)
+                + _L(" n'a pas d'images sur la tuile %s : l'étape 3 "
+                     "s'arrêterait. Ces zones gardent leur source ; "
+                     "redessinez-les avec une autre « Source : »." % tname,
+                     " has no imagery on tile %s: step 3 would stop. These "
+                     "zones keep their source; redraw them with another "
+                     "\"Source:\"." % tname))
+        except Exception as e:
+            UI.vprint(1, "   WARNING zones:", e)
 
 ################################################################################
 class Ortho4XP_Earth_Preview(tk.Toplevel):
