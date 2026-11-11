@@ -1,0 +1,139 @@
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CRÉDIT — AUTEUR : Roland (Ypsos) — Novembre 2026
+# Module conçu et spécifié par Roland (Ypsos) pour Ortho4XP V3.
+# Cette notice d'auteur et de copyright doit être conservée
+# conformément à la GPLv3.
+# ============================================================
+# CREDIT — AUTHOR: Roland (Ypsos) — November 2026
+# This authorship and copyright notice must be retained (GPLv3).
+# ============================================================
+# Fabrication automatique de l'installateur Windows d'Ortho4XP V3.
+# Même principe que le DMG macOS : à chaque « Push origin » sur la branche
+# ORTHO4XP_V3, GitHub fabrique ORTHO4XP_V3_Windows_Setup.exe sur un VRAI
+# Windows, le TESTE (installation, mise à jour sans perte, désinstallation
+# qui garde les données), puis remplace le fichier dans la dernière Release.
+# Roland n'a RIEN à faire. (Manuel possible : Actions → Run workflow)
+# ============================================================
+name: Fabriquer l'installateur Windows
+
+on:
+  push:
+    branches: [ORTHO4XP_V3]
+  workflow_dispatch:
+
+concurrency:
+  group: setup-windows
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Version (O4_Version.py → version_short)
+        run: |
+          $line = Select-String -Path "src/O4_Version.py" -Pattern '^version_short\s*=\s*"([^"]+)"' | Select-Object -First 1
+          $v = if ($line) { $line.Matches[0].Groups[1].Value -replace '^[Vv]', '' } else { "3.0" }
+          "APP_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Version : $v"
+          $n = (Get-ChildItem src -Filter "O4_*.py").Count
+          Write-Host "Fichiers src/O4_*.py : $n"
+          if ($n -lt 60) { throw "src/ incomplet ($n fichiers)" }
+
+      - name: Télécharger Python 3.12.10 officiel et vérifier sa signature
+        run: |
+          $py = Join-Path $env:RUNNER_TEMP "python-3.12.10-amd64.exe"
+          Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe" -OutFile $py
+          $sig = Get-AuthenticodeSignature $py
+          Write-Host "Signature : $($sig.Status) — $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne 'Valid') { throw "Signature Python invalide" }
+          if ($sig.SignerCertificate.Subject -notmatch 'Python Software Foundation') { throw "Signataire inattendu" }
+          "PY_SETUP=$py" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Inno Setup 6
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Host }
+          if (-not (Test-Path $iscc)) { throw "ISCC introuvable" }
+          "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Fabriquer ORTHO4XP_V3_Windows_Setup.exe
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "out"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          & $env:ISCC "/DAppVersion=$env:APP_VERSION" "/DSrcDir=$env:GITHUB_WORKSPACE" "/DPyInstaller=$env:PY_SETUP" "/DOutDir=$out" "Utils\win\installer\ORTHO4XP_V3_Setup.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Compilation Inno Setup échouée" }
+          $exe = Join-Path $out "ORTHO4XP_V3_Windows_Setup.exe"
+          if (-not (Test-Path $exe)) { throw "Setup.exe absent" }
+          Write-Host ("Taille : {0:N0} Mo" -f ((Get-Item $exe).Length / 1MB))
+          "SETUP_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: TEST 1 — installation silencieuse
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "TestInstall\ORTHO4XP_V3"
+          "TEST_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $p = Start-Process -FilePath $env:SETUP_EXE -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/TASKS=""""","/DIR=""$dir""","/LOG=""$env:RUNNER_TEMP\setup1.log""" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\setup1.log" -Tail 40; throw "Installation : code $($p.ExitCode)" }
+          foreach ($f in @("Ortho4XP.py","Ortho4XP_Launcher.py","INSTALL_PREREQUIS.py","LANCEUR_INSTALL_WINDOWS.bat","Demarrer_ORTHO4XP_V3.vbs","custom_theme.json","Utils\win\Triangle4XP.exe","Utils\win\DSFTool.exe","Utils\win\nvcompress\nvcompress.exe","Utils\Earth\Earth2_ZL6_0_0.jpg","unins000.exe")) {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "Fichier manquant après installation : $f" }
+          }
+          $n = (Get-ChildItem (Join-Path $dir "src") -Filter "O4_*.py").Count
+          $m = (Get-ChildItem "$env:GITHUB_WORKSPACE\src" -Filter "O4_*.py").Count
+          if ($n -ne $m) { throw "src/ : $n fichiers installés pour $m dans le dépôt" }
+          foreach ($x in @(".git",".github","venv","Lanceur_Installation_Prerequis.app")) {
+            if (Test-Path (Join-Path $dir $x)) { throw "Ne devrait pas être installé : $x" }
+          }
+          Write-Host "Installation : OK ($n modules)"
+
+      - name: TEST 2 — mise à jour par-dessus sans perte
+        run: |
+          $dir = $env:TEST_DIR
+          Set-Content -Path (Join-Path $dir "Ortho4XP.cfg") -Value "test_reglage=1" -Encoding utf8
+          Set-Content -Path (Join-Path $dir "custom_theme.json") -Value '{"test": 1}' -Encoding utf8
+          New-Item -ItemType Directory -Force -Path (Join-Path $dir "Tiles\zOrtho4XP_+46-003") | Out-Null
+          Set-Content -Path (Join-Path $dir "Tiles\zOrtho4XP_+46-003\temoin.txt") -Value "tuile" -Encoding utf8
+          $p = Start-Process -FilePath $env:SETUP_EXE -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/TASKS=""""","/DIR=""$dir""","/LOG=""$env:RUNNER_TEMP\setup2.log""" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Mise à jour : code $($p.ExitCode)" }
+          if ((Get-Content (Join-Path $dir "Ortho4XP.cfg") -Raw) -notmatch "test_reglage=1") { throw "Ortho4XP.cfg écrasé" }
+          if ((Get-Content (Join-Path $dir "custom_theme.json") -Raw) -notmatch '"test"') { throw "custom_theme.json écrasé" }
+          if (-not (Test-Path (Join-Path $dir "Tiles\zOrtho4XP_+46-003\temoin.txt"))) { throw "Tuile perdue" }
+          Write-Host "Mise à jour sans perte : OK"
+
+      - name: TEST 3 — désinstallation (données conservées)
+        run: |
+          $dir = $env:TEST_DIR
+          New-Item -ItemType Directory -Force -Path (Join-Path $dir "venv\Scripts") | Out-Null
+          Set-Content -Path (Join-Path $dir "venv\Scripts\faux.txt") -Value "x" -Encoding utf8
+          Start-Process -FilePath (Join-Path $dir "unins000.exe") -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          for ($i = 0; $i -lt 60 -and (Test-Path (Join-Path $dir "Ortho4XP.py")); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path (Join-Path $dir "Ortho4XP.py")) { throw "Programme non désinstallé" }
+          if (Test-Path (Join-Path $dir "venv")) { throw "venv non retiré" }
+          if (-not (Test-Path (Join-Path $dir "Tiles\zOrtho4XP_+46-003\temoin.txt"))) { throw "Données utilisateur supprimées" }
+          if (-not (Test-Path (Join-Path $dir "Ortho4XP.cfg"))) { throw "Réglages utilisateur supprimés" }
+          Write-Host "Désinstallation : OK (tuiles et réglages conservés)"
+
+      - name: Mettre l'installateur à disposition (onglet Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ORTHO4XP_V3_Windows_Setup
+          path: ${{ env.SETUP_EXE }}
+          compression-level: 0
+
+      - name: Remplacer l'installateur de la dernière Release publiée
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = gh release view --json tagName --jq .tagName 2>$null
+          if (-not $tag) { Write-Host "Aucune Release publiée : installateur laissé dans l'onglet Actions seulement."; exit 0 }
+          gh release upload $tag "$env:SETUP_EXE" --clobber
+          Write-Host "Installateur mis à jour dans la Release $tag"
