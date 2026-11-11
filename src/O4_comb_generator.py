@@ -817,7 +817,7 @@ def construire_texte_comb(selection, entete_lignes=None):
     """
     if entete_lignes is None:
         entete_lignes = [
-            "Combined layer généré par Ortho4XP V3 (module .comb assisté).",
+            "Combined layer généré par Ortho4XP V4 (module .comb assisté).",
             "Éditable : ajustez zones, filtres et priorités selon vos besoins.",
         ]
     lignes = ["# " + l for l in entete_lignes]
@@ -1242,7 +1242,7 @@ def generer_comb_depuis_extents(provider_actif, base_dir=None,
 
     chemin = os.path.join(pdir, COMB_OUTPUT_NAME)
     entete = [
-        "Provider_Extents.comb — genere automatiquement par Ortho4XP V3.",
+        "Provider_Extents.comb — genere automatiquement par Ortho4XP V4.",
         "Relie le provider actif aux extents crees. Editable a la main.",
         "Provider : %s" % provider_actif,
     ]

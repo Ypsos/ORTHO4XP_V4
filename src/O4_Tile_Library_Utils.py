@@ -18,6 +18,12 @@
 #     obligatoire, jamais en bloc silencieux. La ligne est retiree du .ini.
 #   - VIDER LE CACHE d'une tuile : dossiers OSM_data / Masks / Patches propres a
 #     cette tuile (via O4_File_Names, aucun chemin en dur). Confirmation.
+#   - (nov. 2026) PLACE : a la selection d'une tuile, la place des images
+#     telechargees et du cache s'affiche ; bouton « Liberer les images
+#     telechargees » (confirmation, via O4_Build_Comfort_Utils : seuls les
+#     JPG source de la tuile, jamais ses DDS ni JPG-Patch).
+#   - (nov. 2026) X-PLANE OUVERT : Activer / Desactiver / Supprimer sont
+#     refuses tant que X-Plane tourne (il reecrirait scenery_packs.ini).
 #
 # Securite :
 #   - AUCUN chemin code en dur. On lit ce qui est ecrit dans scenery_packs.ini
@@ -31,6 +37,7 @@
 # ni a cfg_vars.
 # ------------------------------------------------------------------------------
 
+import math
 import os
 import re
 import shutil
@@ -226,6 +233,12 @@ def delete_tile_folder(ini_path, pack_path):
     """
     target = tile_abspath(ini_path, pack_path)
     try:
+        if _is_junction(target):
+            # Windows : jonction (lien de dossier) -> on retire la jonction
+            # seule (os.rmdir), jamais les données pointées.
+            os.rmdir(target)
+            return (True, _L("lien retire (donnees intactes)",
+                             "link removed (data untouched)"))
         if os.path.islink(target):
             os.unlink(target)  # retire le lien seulement
             return (True, _L("lien retire (donnees intactes)",
@@ -237,6 +250,283 @@ def delete_tile_folder(ini_path, pack_path):
                          "nothing to delete (already gone)"))
     except Exception as e:
         return (False, str(e))
+
+
+# ------------------------------------------------------------------------------
+# CHAPITRE 4 (nov. 2026) - Ajouter des tuiles d'un dossier, deplacer une tuile
+# vers un autre disque, reconstruire, routes en double. Bilingue, multi-OS.
+# ------------------------------------------------------------------------------
+def _is_junction(path):
+    """Jonction Windows (lien de dossier) ; toujours False ailleurs."""
+    try:
+        fn = getattr(os.path, "isjunction", None)
+        return bool(fn(path)) if fn else False
+    except Exception:
+        return False
+
+
+def is_link(path):
+    return os.path.islink(path) or _is_junction(path)
+
+
+def remove_link(path):
+    """Retire un lien (ou une jonction) SANS toucher aux données pointées."""
+    if _is_junction(path):
+        os.rmdir(path)
+    else:
+        os.unlink(path)
+
+
+def find_tile_folders(folder):
+    """Dossiers de tuiles Ortho4XP (zOrtho4XP_<tuile> avec « Earth nav
+    data ») : le dossier lui-même s'il en est une, sinon ses sous-dossiers
+    (un niveau, plus Tiles/ si c'est un dossier Ortho4XP). Triés."""
+    out = []
+
+    def _ok(d):
+        return (os.path.basename(os.path.normpath(d)).startswith(_ORTHO_MARK)
+                and os.path.isdir(os.path.join(d, "Earth nav data")))
+
+    if not folder or not os.path.isdir(folder):
+        return out
+    if _ok(folder):
+        return [os.path.normpath(folder)]
+    cands = [folder]
+    if os.path.isdir(os.path.join(folder, "Tiles")):
+        cands.append(os.path.join(folder, "Tiles"))
+    for c in cands:
+        try:
+            names = sorted(os.listdir(c))
+        except Exception:
+            continue
+        for n in names:
+            d = os.path.join(c, n)
+            if _ok(d) and os.path.normpath(d) not in out:
+                out.append(os.path.normpath(d))
+    return out
+
+
+def folder_stats(path):
+    """(nombre de fichiers, octets) d'un dossier, sans suivre les liens."""
+    n, b = 0, 0
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            p = os.path.join(root, f)
+            if os.path.islink(p):
+                continue
+            try:
+                b += os.path.getsize(p)
+                n += 1
+            except Exception:
+                pass
+    return n, b
+
+
+def copy_tile_verified(src, dest_parent, copier=None):
+    """Copie le dossier de tuile src dans dest_parent/<même nom>, puis
+    vérifie (même nombre de fichiers, mêmes octets). Renvoie (ok, nouveau
+    chemin, message). En cas d'écart, la copie incomplète est retirée."""
+    name = os.path.basename(os.path.normpath(src))
+    dst = os.path.join(dest_parent, name)
+    if os.path.lexists(dst):
+        return (False, dst, _L("un dossier « %s » existe déjà à cet endroit"
+                               % name, "a « %s » folder already exists "
+                               "there" % name))
+    n0, b0 = folder_stats(src)
+    try:
+        free = shutil.disk_usage(dest_parent).free
+    except Exception:
+        free = None
+    if free is not None and free < b0 * 1.05 + 50 * 1024 ** 2:
+        return (False, dst, _L("place insuffisante sur ce disque",
+                               "not enough space on that disk"))
+    try:
+        (copier or shutil.copytree)(src, dst, symlinks=True)
+    except Exception as e:
+        try:
+            shutil.rmtree(dst)
+        except Exception:
+            pass
+        return (False, dst, str(e))
+    n1, b1 = folder_stats(dst)
+    if (n1, b1) != (n0, b0):
+        try:
+            shutil.rmtree(dst)
+        except Exception:
+            pass
+        return (False, dst, _L("copie incomplète (%d/%d fichiers) : annulée"
+                               % (n1, n0), "incomplete copy (%d/%d files): "
+                               "cancelled" % (n1, n0)))
+    return (True, dst, "ok")
+
+
+def move_tile(ini_path, pack_path, dest_parent, linker=None, copier=None):
+    """Déplace les données d'une tuile installée vers dest_parent (autre
+    disque) et fait pointer X-Plane dessus. Étapes, toutes vérifiées :
+      1. copie complète + contrôle (copy_tile_verified) ;
+      2. dans Custom Scenery : le lien est refait vers la nouvelle copie
+         (si la tuile y était un vrai dossier, il est d'abord renommé à
+         côté, puis supprimé seulement quand le lien est en place) ;
+    Renvoie (ok, ancien_dossier_de_données|None, message). L'ancienne copie
+    (hors Custom Scenery) n'est JAMAIS effacée ici : l'interface le
+    propose ensuite, « Non » par défaut."""
+    target = tile_abspath(ini_path, pack_path)
+    if not os.path.lexists(target):
+        return (False, None, _L("dossier de la tuile introuvable",
+                                "tile folder not found"))
+    linked = is_link(target)
+    data = os.path.realpath(target)
+    if not os.path.isdir(data):
+        return (False, None, _L("données de la tuile introuvables (disque "
+                                "débranché ?)", "tile data not found (disk "
+                                "unplugged?)"))
+    dp = os.path.normpath(os.path.realpath(dest_parent))
+    if dp == os.path.normpath(data) or \
+            dp.startswith(os.path.normpath(data) + os.sep) or \
+            dp == os.path.normpath(os.path.dirname(data)):
+        return (False, None, _L("choisissez un autre dossier que celui de "
+                                "la tuile", "choose a folder other than the "
+                                "tile's own"))
+    ok, dst, msg = copy_tile_verified(data, dest_parent, copier=copier)
+    if not ok:
+        return (False, None, msg)
+    if linker is None:
+        try:
+            import O4_Scenery_Installer_Utils as SI
+            linker = SI.make_link
+        except Exception:
+            linker = None
+    if linker is None:
+        shutil.rmtree(dst, ignore_errors=True)
+        return (False, None, "make_link")
+    if linked:
+        remove_link(target)
+        ok, m = linker(os.path.abspath(dst), target)
+        if not ok:
+            # remettre l'ancien lien : X-Plane retrouve la tuile comme avant
+            linker(data, target)
+            shutil.rmtree(dst, ignore_errors=True)
+            return (False, None, m)
+        return (True, data, "ok")
+    # vrai dossier dans Custom Scenery : renommé, lien posé, puis supprimé
+    aside = target.rstrip("/\\") + ".o4x_old"
+    if os.path.lexists(aside):
+        shutil.rmtree(dst, ignore_errors=True)
+        return (False, None, aside)
+    os.rename(target, aside)
+    ok, m = linker(os.path.abspath(dst), target)
+    if not ok:
+        os.rename(aside, target)
+        shutil.rmtree(dst, ignore_errors=True)
+        return (False, None, m)
+    shutil.rmtree(aside, ignore_errors=True)
+    return (True, None, "ok")
+
+
+OVERLAY_HINTS = ("overlay", "x-world", "simheaven", "world2xplane", "w2xp")
+
+
+def _pack_name(path):
+    return path.rstrip("/").split("/")[-1]
+
+
+def overlay_packs_for_tile(ini_path, lat, lon, text=None):
+    """Paquets ACTIVÉS de scenery_packs.ini qui semblent dessiner routes /
+    forêts / bâtiments sur cette tuile (nom contenant « overlay »,
+    « X-World »… ET un DSF pour cette tuile). Liste de noms."""
+    try:
+        text = text if text is not None else read_scenery_file(ini_path)
+    except Exception:
+        return []
+    grp = "%+03d%+04d" % (int(math.floor(lat / 10.0)) * 10,
+                          int(math.floor(lon / 10.0)) * 10)
+    short = "%+03d%+04d" % (lat, lon)
+    out = []
+    for e in parse_scenery_packs(text):
+        if not e["enabled"] or e["is_ortho"]:
+            continue
+        name = _pack_name(e["path"])
+        low = name.lower()
+        if not any(h in low for h in OVERLAY_HINTS):
+            continue
+        dsf = os.path.join(tile_abspath(ini_path, e["path"]),
+                           "Earth nav data", grp, short + ".dsf")
+        if os.path.isfile(dsf):
+            out.append(name)
+    return out
+
+
+def duplicate_overlays(ini_path):
+    """{tuile: [paquets]} pour les tuiles Ortho4XP de la liste où AU MOINS
+    deux paquets de routes / forêts couvrent la même tuile (routes qui
+    clignotent, objets en double). Lecture seule."""
+    try:
+        text = read_scenery_file(ini_path)
+    except Exception:
+        return {}
+    res = {}
+    for e in list_ortho_tiles(text):
+        ll = tile_latlon_from_path(e["path"])
+        if not ll or ll in res:
+            continue
+        packs = overlay_packs_for_tile(ini_path, ll[0], ll[1], text=text)
+        if len(packs) >= 2:
+            res[ll] = packs
+    return res
+
+
+def rebuild_tile(ini_path, pack_path, state=None):
+    """Reconstruit une tuile installée (les 4 étapes, TILE.build_all, avec
+    son .cfg), dans son dossier. À lancer dans un thread. Renvoie
+    (ok, message)."""
+    state = state if state is not None else {}
+    ll = tile_latlon_from_path(pack_path)
+    if not ll:
+        return (False, _L("coordonnées non reconnues", "coordinates not "
+                          "recognised"))
+    data = os.path.realpath(tile_abspath(ini_path, pack_path))
+    if not os.path.isdir(data):
+        return (False, _L("données de la tuile introuvables",
+                          "tile data not found"))
+    try:
+        import O4_Image_Repair_Utils as IR
+        import O4_Config_Utils as CFG
+        import O4_File_Names as FNAMES
+        import O4_Tile_Utils as TILE
+        import O4_UI_Utils as UI
+    except Exception as e:
+        return (False, str(e))
+    if getattr(UI, "is_working", False):
+        return (False, _L("une construction est déjà en cours",
+                          "a build is already running"))
+    cbd = IR._cbd_for(ll[0], ll[1], data)
+    if cbd is None:
+        return (False, _L("dossier non standard : reconstruisez-la depuis la "
+                          "fenêtre principale", "non-standard folder: rebuild "
+                          "it from the main window"))
+    state["running"] = True
+    ok = False
+    try:
+        UI.red_flag = False
+        tile = CFG.Tile(ll[0], ll[1], cbd)
+        name = FNAMES.short_latlon(ll[0], ll[1])
+        cfgs = (os.path.join(tile.build_dir, "Ortho4XP_" + name + ".cfg"),
+                os.path.join(tile.build_dir, "Ortho4XP.cfg"))
+        if any(os.path.isfile(c) for c in cfgs):
+            tile.read_from_config()
+        ok = bool(TILE.build_all(tile)) and not UI.red_flag
+    except Exception as e:
+        state["running"] = False
+        return (False, str(e))
+    finally:
+        try:
+            UI.is_working = 0
+            UI.red_flag = False
+        except Exception:
+            pass
+    state["running"] = False
+    return (ok, "ok" if ok else _L("échec : voir le journal / Diagnostic",
+                                   "failed: see the log / Diagnostic"))
 
 
 def tile_cache_dirs(lat, lon):
@@ -260,6 +550,42 @@ def tile_cache_dirs(lat, lon):
     except Exception:
         pass
     return dirs
+
+
+def dir_size_go(path):
+    """Taille d'un dossier en Go (0 si absent)."""
+    tot = 0
+    for root, _dirs, files in os.walk(path):
+        for f in files:
+            try:
+                tot += os.path.getsize(os.path.join(root, f))
+            except Exception:
+                pass
+    return tot / 1024.0 ** 3
+
+
+def tile_space(lat, lon):
+    """(liste des JPG source, Go des JPG, Go du cache OSM/Masks/Patches)."""
+    jpgs, go_jpg = [], 0.0
+    try:
+        import O4_Build_Comfort_Utils as BC
+        import O4_File_Names as FNAMES
+        jpgs = BC.tile_jpgs(lat, lon, FNAMES.Imagery_dir)
+        go_jpg = BC.files_size_go(jpgs)
+    except Exception:
+        pass
+    go_cache = sum(dir_size_go(d) for _l, d in tile_cache_dirs(lat, lon))
+    return (jpgs, go_jpg, go_cache)
+
+
+def xplane_is_open():
+    try:
+        import O4_Scenery_Installer_Utils as SI
+        if SI.xplane_running() is True:
+            return SI.xplane_open_message()
+    except Exception:
+        pass
+    return ""
 
 
 def clear_tile_cache(lat, lon):
@@ -376,8 +702,8 @@ def run_tile_library(parent=None):
     except Exception:
         pass
     win = tk.Toplevel(root_ref) if root_ref else tk.Tk()
-    win.title(_L("Bibliotheque de tuiles - Ortho4XP V3",
-                 "Tile library - Ortho4XP V3"))
+    win.title(_L("Bibliotheque de tuiles - Ortho4XP V4",
+                 "Tile library - Ortho4XP V4"))
     win.configure(bg=BG)
     # Applique le theme aux widgets standards (defensif). La Listbox n'est pas
     # geree par apply_to_root -> couleurs posees a la main plus bas.
@@ -586,7 +912,16 @@ def run_tile_library(parent=None):
             save_ini_path(p)
             _refresh()
 
+    def _xp_block():
+        msg = xplane_is_open()
+        if msg:
+            messagebox.showwarning(win.title(), msg)
+            return True
+        return False
+
     def _enable(flag):
+        if _xp_block():
+            return
         t = _selected()
         if not t:
             return
@@ -598,6 +933,8 @@ def run_tile_library(parent=None):
                      else _L("Desactivee : ", "Disabled: ")) + t["path"])
 
     def _delete_tile():
+        if _xp_block():
+            return
         t = _selected()
         if not t:
             return
@@ -650,6 +987,86 @@ def run_tile_library(parent=None):
         _set_status(_L("Cache vide : ", "Cache cleared: ") + ", ".join(res)
                     if res else _L("Rien a vider.", "Nothing to clear."))
 
+    space = {"key": None, "jpgs": [], "go": 0.0}
+
+    def _show_space(e=None):
+        sel = lb_on.curselection() or lb_off.curselection()
+        if not sel:
+            return
+        rows = state["rows_on"] if lb_on.curselection() else state["rows_off"]
+        t = rows[sel[0]]
+        ll = tile_latlon_from_path(t["path"])
+        if not ll:
+            return
+        space["key"] = ll
+        _set_status(_L("Calcul de la place…", "Measuring space…"))
+
+        def _work():
+            res = tile_space(*ll)
+            try:
+                dup = overlay_packs_for_tile(state["ini"], ll[0], ll[1])
+            except Exception:
+                dup = []
+
+            def _done():
+                if space["key"] != ll:
+                    return
+                space["jpgs"], space["go"] = res[0], res[1]
+                msg_ = _L("Images téléchargées : %.1f Go  ·  cache : "
+                          "%.1f Go" % (res[1], res[2]),
+                          "Downloaded images: %.1f GB  ·  cache: "
+                          "%.1f GB" % (res[1], res[2]))
+                if len(dup) >= 2:
+                    msg_ += _L("  ·  ⚠ routes en double : ",
+                               "  ·  ⚠ roads twice: ") + ", ".join(dup)
+                _set_status(msg_)
+            try:
+                win.after(0, _done)
+            except Exception:
+                pass
+
+        import threading as _th
+        _th.Thread(target=_work, daemon=True).start()
+
+    lb_on.bind("<<ListboxSelect>>", _show_space, add="+")
+    lb_off.bind("<<ListboxSelect>>", _show_space, add="+")
+
+    def _free_images():
+        t = _selected()
+        if not t:
+            return
+        ll = tile_latlon_from_path(t["path"])
+        if not ll:
+            messagebox.showinfo(win.title(),
+                                _L("Coordonnees non reconnues pour cette tuile.",
+                                   "Could not read this tile's coordinates."))
+            return
+        jpgs, go, _c = tile_space(*ll)
+        if not jpgs:
+            _set_status(_L("Aucune image telechargee pour cette tuile.",
+                           "No downloaded image for this tile."))
+            return
+        if not messagebox.askyesno(
+                win.title(),
+                _L("Supprimer les images telechargees de cette tuile "
+                   "(%.1f Go) ?\n\nLa tuile reste complete dans X-Plane, "
+                   "mais la reconstruire plus tard sera plus long : tout sera "
+                   "retelecharge." % go,
+                   "Delete this tile's downloaded images (%.1f GB)?\n\nThe "
+                   "tile stays complete in X-Plane, but rebuilding it later "
+                   "will take longer: everything will be downloaded again."
+                   % go), default="no"):
+            return
+        try:
+            import O4_Build_Comfort_Utils as BC
+            n = BC.delete_files(jpgs)
+        except Exception as e:
+            messagebox.showerror(win.title(), str(e))
+            return
+        _set_status(_L("%d image(s) supprimee(s), %.1f Go liberes."
+                       % (n, go), "%d image(s) deleted, %.1f GB freed."
+                       % (n, go)))
+
     # --- boutons bas ---
     bot = tk.Frame(win, bg=BG)
     bot.pack(fill=tk.X, padx=10, pady=(4, 10))
@@ -665,6 +1082,211 @@ def run_tile_library(parent=None):
          _delete_tile).grid(row=2, column=0, padx=4, pady=3, sticky="ew")
     _btn(bot, _L("Vider le cache", "Clear cache"),
          _clear_cache).grid(row=2, column=1, padx=4, pady=3, sticky="ew")
+    _btn(bot, _L("Liberer les images telechargees",
+                 "Free downloaded images"),
+         _free_images).grid(row=3, column=0, columnspan=2, padx=4, pady=3,
+                            sticky="ew")
+
+    # --- (nov. 2026) ajouter / déplacer / reconstruire / routes en double ---
+    def _busy_block():
+        try:
+            import O4_UI_Utils as UI
+            if getattr(UI, "is_working", False):
+                messagebox.showwarning(win.title(), _L(
+                    "Une construction est en cours : attendez la fin.",
+                    "A build is running: wait for it to end."))
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _add_folder():
+        if _xp_block() or _busy_block():
+            return
+        if not state["ini"] or not os.path.isfile(state["ini"]):
+            _choose_ini()
+            if not state["ini"] or not os.path.isfile(state["ini"]):
+                return
+        d = filedialog.askdirectory(
+            parent=win, title=_L("Dossier qui contient vos tuiles (dossier "
+                                 "Ortho4XP, Tiles, ou un disque de tuiles)",
+                                 "Folder holding your tiles (Ortho4XP "
+                                 "folder, Tiles, or a disk of tiles)"))
+        if not d:
+            return
+        found = find_tile_folders(d)
+        if not found:
+            messagebox.showinfo(win.title(), _L(
+                "Aucune tuile Ortho4XP (zOrtho4XP_…) trouvée dans ce dossier.",
+                "No Ortho4XP tile (zOrtho4XP_…) found in this folder."))
+            return
+        names = ", ".join(os.path.basename(x) for x in found[:10]) + (
+            " …" if len(found) > 10 else "")
+        if not messagebox.askyesno(win.title(), _L(
+                "Ajouter %d tuile(s) à X-Plane ?\n\n%s\n\nUn lien est créé "
+                "dans Custom Scenery (aucune copie) ; scenery_packs.ini est "
+                "sauvegardé avant (.bak)." % (len(found), names),
+                "Add %d tile(s) to X-Plane?\n\n%s\n\nA link is made in "
+                "Custom Scenery (no copy); scenery_packs.ini is backed up "
+                "first (.bak)." % (len(found), names))):
+            return
+        try:
+            import O4_Scenery_Installer_Utils as SI
+            rep_ = SI.install_tiles(found, ini_path=state["ini"])
+        except Exception as e:
+            messagebox.showerror(win.title(), str(e))
+            return
+        ok_n = sum(1 for r in rep_ if r[1])
+        ko = ["%s : %s" % (r[0], r[2]) for r in rep_ if not r[1]]
+        _refresh()
+        (messagebox.showinfo if not ko else messagebox.showwarning)(
+            win.title(), _L("%d tuile(s) ajoutée(s).", "%d tile(s) added.")
+            % ok_n + ("\n" + "\n".join(ko[:10]) if ko else ""))
+
+    def _move():
+        if _xp_block() or _busy_block():
+            return
+        t_ = _selected()
+        if not t_:
+            return
+        d = filedialog.askdirectory(
+            parent=win, title=_L("Nouveau dossier pour cette tuile (autre "
+                                 "disque)", "New folder for this tile "
+                                 "(another disk)"))
+        if not d:
+            return
+        target = tile_abspath(state["ini"], t_["path"])
+        data = os.path.realpath(target)
+        n, b = folder_stats(data) if os.path.isdir(data) else (0, 0)
+        warn = "" if is_link(target) else _L(
+            "\n\nLa tuile est aujourd'hui un vrai dossier dans Custom "
+            "Scenery : il sera SUPPRIMÉ une fois la copie vérifiée et le lien "
+            "posé.", "\n\nThe tile is today a real folder in Custom "
+            "Scenery: it will be DELETED once the copy is checked and the "
+            "link is in place.")
+        if not messagebox.askyesno(win.title(), _L(
+                "Déplacer %s (%d fichiers, %.1f Go) vers :\n%s ?\n\nLa "
+                "copie est vérifiée avant que X-Plane ne pointe dessus."
+                % (_pack_name(t_["path"]), n, b / 1024.0 ** 3, d),
+                "Move %s (%d files, %.1f GB) to:\n%s?\n\nThe copy is "
+                "checked before X-Plane points to it."
+                % (_pack_name(t_["path"]), n, b / 1024.0 ** 3, d)) + warn,
+                default="no"):
+            return
+        _set_status(_L("Copie en cours…", "Copying…"))
+        box = {}
+
+        def _work():
+            box["r"] = move_tile(state["ini"], t_["path"], d)
+
+        import threading as _th
+        th = _th.Thread(target=_work, daemon=True)
+        th.start()
+
+        def _poll():
+            if th.is_alive():
+                win.after(500, _poll)
+                return
+            ok, old, msg = box.get("r", (False, None, "?"))
+            if not ok:
+                _set_status(_L("Déplacement annulé : ", "Move cancelled: ")
+                            + str(msg))
+                messagebox.showwarning(win.title(), _L(
+                    "Déplacement annulé, rien n'a changé : ",
+                    "Move cancelled, nothing changed: ") + str(msg))
+                return
+            _set_status(_L("Tuile déplacée.", "Tile moved."))
+            if old and os.path.isdir(old) and messagebox.askyesno(
+                    win.title(), _L(
+                        "La tuile est déplacée et X-Plane la lit au nouvel "
+                        "endroit.\n\nEffacer l'ancienne copie pour libérer "
+                        "la place ?\n%s" % old,
+                        "The tile is moved and X-Plane reads it at the new "
+                        "place.\n\nDelete the old copy to free the space?"
+                        "\n%s" % old), default="no"):
+                try:
+                    shutil.rmtree(old)
+                    _set_status(_L("Tuile déplacée, ancienne copie effacée.",
+                                   "Tile moved, old copy deleted."))
+                except Exception as e:
+                    messagebox.showerror(win.title(), str(e))
+            _refresh()
+
+        win.after(500, _poll)
+
+    def _rebuild():
+        if _xp_block() or _busy_block():
+            return
+        t_ = _selected()
+        if not t_:
+            return
+        if not messagebox.askyesno(win.title(), _L(
+                "Reconstruire %s avec les réglages de son .cfg ?\n\nLes "
+                "images déjà téléchargées sont réutilisées. Le détail "
+                "s'affiche dans la fenêtre principale."
+                % _pack_name(t_["path"]),
+                "Rebuild %s with the settings of its .cfg?\n\nImages "
+                "already downloaded are reused. Details show in the main "
+                "window." % _pack_name(t_["path"]))):
+            return
+        _set_status(_L("Reconstruction en cours…", "Rebuilding…"))
+        box = {}
+
+        def _work():
+            box["r"] = rebuild_tile(state["ini"], t_["path"])
+
+        import threading as _th
+        th = _th.Thread(target=_work, daemon=True)
+        th.start()
+
+        def _poll():
+            if th.is_alive():
+                win.after(1000, _poll)
+                return
+            ok, msg = box.get("r", (False, "?"))
+            _set_status((_L("Reconstruite : ", "Rebuilt: ") if ok else
+                         _L("Reconstruction : ", "Rebuild: ")) + str(msg))
+            try:
+                import O4_Build_Comfort_Utils as BC
+                BC.notify("Ortho4XP V4", _L("Reconstruction terminée",
+                                            "Rebuild finished"))
+            except Exception:
+                pass
+
+        win.after(1000, _poll)
+
+    def _check_dups():
+        if not state["ini"] or not os.path.isfile(state["ini"]):
+            _choose_ini()
+            return
+        res = duplicate_overlays(state["ini"])
+        if not res:
+            messagebox.showinfo(win.title(), _L(
+                "Aucune route en double repérée sur vos tuiles Ortho4XP.",
+                "No roads drawn twice found on your Ortho4XP tiles."))
+            return
+        lines = ["%s : %s" % ("%+03d%+04d" % k, ", ".join(v))
+                 for k, v in sorted(res.items())]
+        messagebox.showwarning(win.title(), _L(
+            "Routes / forêts / bâtiments dessinés deux fois (elles "
+            "clignotent) sur %d tuile(s) :\n\n%s\n\nDésactivez l'un des "
+            "paquets ci-dessus pour ces tuiles (rien n'a été changé)."
+            % (len(res), "\n".join(lines[:15])),
+            "Roads / forests / buildings drawn twice (they flicker) on %d "
+            "tile(s):\n\n%s\n\nDisable one of the packs above for these "
+            "tiles (nothing was changed)." % (len(res),
+                                               "\n".join(lines[:15]))))
+
+    _btn(bot, _L("📂 Ajouter des tuiles d'un dossier…",
+                 "📂 Add tiles from a folder…"),
+         _add_folder).grid(row=4, column=0, padx=4, pady=3, sticky="ew")
+    _btn(bot, _L("🚚 Déplacer vers un autre disque…",
+                 "🚚 Move to another disk…"),
+         _move).grid(row=4, column=1, padx=4, pady=3, sticky="ew")
+    _btn(bot, _L("🔁 Reconstruire la tuile", "🔁 Rebuild the tile"),
+         _rebuild).grid(row=5, column=0, padx=4, pady=3, sticky="ew")
+    _btn(bot, _L("🔎 Routes en double ?", "🔎 Roads drawn twice?"),
+         _check_dups).grid(row=5, column=1, padx=4, pady=3, sticky="ew")
     bot.grid_columnconfigure(0, weight=1)
     bot.grid_columnconfigure(1, weight=1)
 
@@ -674,7 +1296,7 @@ def run_tile_library(parent=None):
     # Sur grand ecran : min() garde 720x560 -> aucune regression. Sur ecran
     # scaled/petit (retour forum Windows 175 %) : la fenetre ne deborde plus,
     # les boutons du bas restent visibles, la liste defile.
-    _want_w, _want_h = 720, 560
+    _want_w, _want_h = 720, 660   # nov. 2026 : 2 rangées de boutons en plus
     try:
         _win_w = min(_want_w, int(win.winfo_screenwidth() * 0.95))
         _win_h = min(_want_h, int(win.winfo_screenheight() * 0.90))

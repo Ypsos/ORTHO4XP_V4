@@ -29,6 +29,24 @@ import O4_Color_Check as CC
 from O4_Lang import tr
 import O4_UI_Dialogs as DIALOGS
 
+
+# ── Confort pendant les étapes (Roland/Ypsos, module O4_Build_Comfort_Utils) ─
+#  Pas de mise en veille pendant une étape lancée depuis cette fenêtre, et
+#  signal de fin (son + notification) si le travail a duré plus de 2 minutes.
+#  Toujours exécuté sur le thread principal (via after). Si le module est
+#  absent ou échoue : rien ne change.
+def _comfort_call(widget, name):
+    def _do():
+        try:
+            import O4_Build_Comfort_Utils as _BC
+            getattr(_BC, name)()
+        except Exception:
+            pass
+    try:
+        widget.after(0, _do)
+    except Exception:
+        pass
+
 # ── Module de correction imagerie/zone (non bloquant) ────────────────────
 #  Fichier autonome hébergeant, à terme, le preview des DDS, la correction
 #  GIMP et la gestion des couches JOSM. Import non bloquant : si le module
@@ -334,7 +352,7 @@ class Ortho4XP_GUI(tk.Tk):
             self.map_list = ["BI","GO2","ARC","IGN","SWISSTOPO","ZonePhoto"]
 
         # ── Fenêtre ───────────────────────────────────────────────────
-        self.title("Ortho4XP V3.0 - sRGB Roland Edition (Mars 2026)")
+        self.title("Ortho4XP V4.0 - sRGB Roland Edition (Mars 2026)")
         # ── Taille de fenêtre adaptée à l'écran (universel, multi-OS) ──────
         #  Taille SOUHAITÉE identique à avant (1320 x 860, mise à l'échelle s).
         #  On la PLAFONNE ensuite à l'écran réellement disponible pour que la
@@ -1537,6 +1555,7 @@ class Ortho4XP_GUI(tk.Tk):
                 self.after(0, lambda: self.pgrb_activity.start(15))
         except Exception:
             pass
+        _comfort_call(self, "activity_begin")
 
     def _activity_stop(self):
         # Arrête l'animation de la barre d'activité (appel thread-safe via after)
@@ -1544,6 +1563,7 @@ class Ortho4XP_GUI(tk.Tk):
             self.after(0, self.pgrb_activity.stop)
         except Exception:
             pass
+        _comfort_call(self, "activity_end")
 
     @staticmethod
     def _lighten(hexcol, factor):
@@ -4474,6 +4494,15 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
                 highlightthickness=0,
             ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
             row += 1
+        # V4 (nov. 2026) : tuiles autour d'un aéroport (même fenêtre que le
+        # mode simple, O4_Route_Utils). Ajout pur :
+        # les tuiles vont dans la liste « Batch Build » comme Shift+clic.
+        _ctk_button(
+            self.frame_left,
+            text=_L("✈ Autour d'un aéroport…", "✈ Around an airport…"),
+            command=self.open_route_picker,
+        ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
+        row += 1
         _ctk_button(
             self.frame_left, text=tr("  Batch Build   "), command=self.batch_build
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
@@ -4983,6 +5012,34 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.dico_tiles_todo.pop((lat, lon), None)
         return
 
+    def add_tiles_to_batch(self, tiles):
+        """V4 : ajoute des tuiles à la liste « Batch Build », avec le même
+        repère que Shift+clic (add_tile). Une tuile déjà dans la liste reste
+        telle quelle. Renvoie le nombre de tuiles ajoutées."""
+        added = 0
+        for (lat, lon) in tiles:
+            if (lat, lon) in self.dico_tiles_todo:
+                continue
+            [x0, y0] = GEO.wgs84_to_pix(lat + 1, lon, self.earthzl)
+            [x1, y1] = GEO.wgs84_to_pix(lat, lon + 1, self.earthzl)
+            if not OsX:
+                self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
+                    x0, y0, x1, y1, fill="red", stipple="gray12"
+                )
+            else:
+                self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
+                    x0 + 2, y0 + 2, x1 - 2, y1 - 2, outline="red", width=1
+                )
+            added += 1
+        return added
+
+    def open_route_picker(self):
+        try:
+            import O4_Route_Utils as RT
+            RT.run_route_picker(self, self.add_tiles_to_batch)
+        except Exception as e:
+            messagebox.showinfo("Ortho4XP", str(e))
+
     def batch_build(self):
         list_lat_lon = sorted(self.dico_tiles_todo.keys())
         if not list_lat_lon:
@@ -5002,7 +5059,15 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.v_["Extract overlays"].get(),
             self.v_["Read per tile cfg"].get(),
         ]
-        threading.Thread(target=TILE.build_tile_list, args=args).start()
+        _comfort_call(self, "activity_begin")
+
+        def _batch_run():
+            try:
+                TILE.build_tile_list(*args)
+            finally:
+                _comfort_call(self, "activity_end")
+
+        threading.Thread(target=_batch_run).start()
         return
 
     def scroll_start(self, event):

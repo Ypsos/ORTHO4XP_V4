@@ -147,7 +147,7 @@ def _ask_patch_management(patch_dir, existing_files):
             pass
 
         win = tk.Toplevel(root_ref) if root_ref else tk.Tk()
-        win.title(_tr("Gestion JPG-Patch — Ortho4XP V3"))
+        win.title(_tr("Gestion JPG-Patch — Ortho4XP V4"))
         win.configure(bg=BG)
         win.resizable(False, False)
         win.lift()
@@ -212,7 +212,7 @@ def _ask_patch_management(patch_dir, existing_files):
         sel_result = {"to_delete": list(existing_files)}  # par défaut tout supprimer
 
         sel = tk.Toplevel(root_ref) if root_ref else tk.Tk()
-        sel.title(_tr("Sélection patches à conserver — Ortho4XP V3"))
+        sel.title(_tr("Sélection patches à conserver — Ortho4XP V4"))
         sel.configure(bg=BG)
         sel.resizable(True, True)
         sel.lift()
@@ -490,7 +490,7 @@ def _open_correction_window(parent_win, patch_dir, existing_files,
         pass
 
     corr = tk.Toplevel(root_ref) if root_ref else tk.Toplevel(parent_win)
-    corr.title(_tr("Correction patches — Ortho4XP V3"))
+    corr.title(_tr("Correction patches — Ortho4XP V4"))
     corr.configure(bg=BG)
     corr.resizable(True, True)
     corr.lift()
@@ -781,6 +781,10 @@ def _open_correction_window(parent_win, patch_dir, existing_files,
 
 
 max_convert_slots = 4
+# Téléchargements d'images en parallèle (Roland/Ypsos, nov. 2026). 1 = moteur
+# d'origine, une image après l'autre (comportement inchangé). Réglable dans
+# la configuration (max_download_slots) ; le mode simple le relève.
+max_download_slots = 1
 skip_downloads = False
 skip_converts = False
 
@@ -1053,6 +1057,14 @@ def build_sea_patches(tile):
 ################################################################################
 ################################################################################
 def download_textures(tile, download_queue, convert_queue, sea_texture_set=None):
+    try:
+        _slots = int(max_download_slots)
+    except Exception:
+        _slots = 1
+    if _slots > 1:
+        return _download_textures_parallel(
+            tile, download_queue, convert_queue, sea_texture_set,
+            min(_slots, 8))
     UI.vprint(1, "-> Opening download queue.")
     done = 0
     while True:
@@ -1084,6 +1096,120 @@ def download_textures(tile, download_queue, convert_queue, sea_texture_set=None)
     if done:
         UI.vprint(1, " *Download of textures completed.")
     return 1
+
+################################################################################
+# Téléchargement en parallèle (Roland/Ypsos, nov. 2026)
+# ------------------------------------------------------------------------------
+# Même travail que la boucle d'origine ci-dessus, fait par `slots` ouvriers :
+# chaque image reçue de l'étape DSF est téléchargée (IMG.build_jpeg_ortho,
+# fonction inchangée) puis envoyée à la conversion, exactement comme avant.
+# Sécurité : deux images peuvent demander le MÊME JPG source (source combinée
+# dont le ZL max est plus bas) ; un verrou par fichier fait qu'un seul ouvrier
+# le télécharge, l'autre le trouve ensuite sur le disque.
+_dl_guard = threading.Lock()
+_dl_locks = {}
+
+
+def _file_lock(path):
+    with _dl_guard:
+        lk = _dl_locks.get(path)
+        if lk is None:
+            lk = threading.Lock()
+            _dl_locks[path] = lk
+        return lk
+
+
+def _locked_download(orig):
+    def _dl(file_dir, file_name, *args, **kwargs):
+        path = os.path.normpath(os.path.join(file_dir, file_name))
+        with _file_lock(path):
+            try:
+                if IMG._jpeg_is_valid(path):
+                    return 1
+            except Exception:
+                pass
+            return orig(file_dir, file_name, *args, **kwargs)
+    _dl._o4_locked = True
+    return _dl
+
+
+def _download_textures_parallel(tile, download_queue, convert_queue,
+                                sea_texture_set, slots):
+    UI.vprint(1, "-> Opening download queue with", slots,
+              "parallel downloads.")
+    work_queue = queue.Queue()
+    state = {"done": 0}
+    state_lock = threading.Lock()
+    orig_dl = IMG.download_jpeg_ortho
+    if not getattr(orig_dl, "_o4_locked", False):
+        IMG.download_jpeg_ortho = _locked_download(orig_dl)
+
+    def _progress():
+        try:
+            with state_lock:
+                d = state["done"]
+            waiting = work_queue.qsize() + download_queue.qsize()
+            UI.progress_bar(2, int(100 * d / (d + waiting)))
+        except Exception:
+            pass
+
+    def _worker():
+        while True:
+            texture_attributes = work_queue.get()
+            if isinstance(texture_attributes, str) and \
+                    texture_attributes == "quit":
+                return
+            if UI.red_flag:
+                continue          # on vide la file sans rien faire
+            try:
+                ok = IMG.build_jpeg_ortho(tile, *texture_attributes)
+            except Exception as e:
+                UI.vprint(1, "   ERROR download:", e)
+                ok = False
+            is_sea_tile = (sea_texture_set is not None and
+                           texture_attributes in sea_texture_set)
+            if ok or is_sea_tile:
+                with state_lock:
+                    state["done"] += 1
+                _progress()
+                convert_queue.put((tile, *texture_attributes))
+
+    workers = []
+    for _ in range(slots):
+        th = threading.Thread(target=_worker, daemon=True)
+        th.start()
+        workers.append(th)
+    result = 1
+    try:
+        while True:
+            texture_attributes = download_queue.get()
+            if isinstance(texture_attributes, str) and \
+                    texture_attributes == "quit":
+                break
+            if UI.red_flag:
+                result = 0
+                break
+            work_queue.put(texture_attributes)
+    finally:
+        for _ in workers:
+            work_queue.put("quit")
+        for th in workers:
+            th.join()
+        if IMG.download_jpeg_ortho is not orig_dl and \
+                getattr(IMG.download_jpeg_ortho, "_o4_locked", False):
+            IMG.download_jpeg_ortho = orig_dl
+        with _dl_guard:
+            _dl_locks.clear()
+    if UI.red_flag:
+        UI.vprint(1, "Download process interrupted.")
+        return 0
+    if not result:
+        return 0
+    UI.progress_bar(2, 100)
+    if state["done"]:
+        UI.vprint(1, " *Download of textures completed.")
+    return 1
+
 
 ################################################################################
 def build_tile(tile):

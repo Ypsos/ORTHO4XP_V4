@@ -11,4 +11,4 @@ version = "V4.0 - sRGB Roland(Ypsos) Edition (Mars 2026)"
 # Un seul endroit à changer lors du passage à une nouvelle version : ci-dessous.
 # Le lanceur lit automatiquement cette valeur — le titre n'est plus écrit en dur.
 # ─────────────────────────────────────────────────────────────────────────────
-version_short = "V3.0"
+version_short = "V4.0"

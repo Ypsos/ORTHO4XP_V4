@@ -181,3 +181,10 @@ _apt_cache_key
 # Tuiles perso rangees dans Providers (ne pas publier)
 Providers/+[0-9]*/
 _ortho_run.sh
+.grand_public_licence_ok
+.airport_index.json
+.grand_public_history.json
+.grand_public_profiles.json
+.simbrief_user
+.update_check.json
+Rapports/

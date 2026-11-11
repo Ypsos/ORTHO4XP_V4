@@ -346,7 +346,7 @@ T = {
 
     # ── IMAGERY/ZONE CORRECTION — button & window ─────────────────
     "Visualiser la tuile"                    : "View tile",
-    "Visualiser la tuile — Ortho4XP V3"      : "View tile — Ortho4XP V3",
+    "Visualiser la tuile — Ortho4XP V4"      : "View tile — Ortho4XP V4",
     "Mosaïque des DDS de la tuile — à venir" : "Tile DDS mosaic — coming soon",
     "Dossier textures introuvable pour cette tuile." : "Textures folder not found for this tile.",
     "Aucun DDS dans le dossier textures de la tuile." : "No DDS found in the tile's textures folder.",
@@ -379,10 +379,10 @@ T = {
                                             : "Imagery correction and zone processing",
 
     # ── JPG-PATCH MANAGEMENT — window texts ───────────────────────
-    "Gestion JPG-Patch — Ortho4XP V3"       : "JPG-Patch Manager — Ortho4XP V3",
+    "Gestion JPG-Patch — Ortho4XP V4"       : "JPG-Patch Manager — Ortho4XP V4",
     "Gestion des JPG-Patch existants"        : "Existing JPG-Patches",
     "patch(es) trouvé(s) dans"              : "patch(es) found in",
-    "Sélection patches à conserver — Ortho4XP V3" : "Select patches to keep — Ortho4XP V3",
+    "Sélection patches à conserver — Ortho4XP V4" : "Select patches to keep — Ortho4XP V4",
     "Cocher les patches à CONSERVER"         : "Check the patches to KEEP",
     "(Les patches non cochés seront supprimés)" : "(Unchecked patches will be deleted)",
     "Tout cocher"   : "Check all",
@@ -396,7 +396,7 @@ T = {
 
     # ── PROVIDERS PERSONNELS ───────────────────────────────────────
     "Personnel"                             : "Custom",
-    "personal_provider_window_title"        : "Custom Providers — Ortho4XP V3",
+    "personal_provider_window_title"        : "Custom Providers — Ortho4XP V4",
     "personal_provider_list_label"          : "My providers:",
     "personal_provider_name_label"          : "Provider name (code):",
     "personal_provider_url_label"           : "jpg URL (TMS):",
@@ -516,8 +516,8 @@ T = {
         : '⛰ Elevation / DEM / QGIS',
     'Altimétrie / DEM / QGIS'
         : 'Elevation / DEM / QGIS',
-    'Altimétrie / DEM / QGIS — Ortho4XP V3'
-        : 'Elevation / DEM / QGIS — Ortho4XP V3',
+    'Altimétrie / DEM / QGIS — Ortho4XP V4'
+        : 'Elevation / DEM / QGIS — Ortho4XP V4',
     'Le module O4_Altimetrie_Utils.py est introuvable dans le dossier src/.'
         : 'Module O4_Altimetrie_Utils.py not found in the src/ folder.',
     'Latitude / longitude invalides.'
@@ -1041,8 +1041,8 @@ T = {
         : 'Imagery / area correction',
     'Correction patches'
         : 'Patch correction',
-    'Correction patches — Ortho4XP V3'
-        : 'Patch correction — Ortho4XP V3',
+    'Correction patches — Ortho4XP V4'
+        : 'Patch correction — Ortho4XP V4',
     'Erreur'
         : 'Error',
     'Erreur ouverture'
@@ -1297,8 +1297,8 @@ T = {
         : 'Bathymetry',
     'Le module O4_Bathymetrie_Utils.py est introuvable dans le dossier src/.'
         : 'The O4_Bathymetrie_Utils.py module was not found in the src/ folder.',
-    'Bathymétrie — Ortho4XP V3'
-        : 'Bathymetry — Ortho4XP V3',
+    'Bathymétrie — Ortho4XP V4'
+        : 'Bathymetry — Ortho4XP V4',
     "Assemblage terminé.\n\n{f}\n\ncustom_bathy_dem est renseigné : la tuile est prête pour l'étape mesh."
         : 'Assembly complete.\n\n{f}\n\ncustom_bathy_dem is set: the tile is ready for the mesh step.',
     "Aucun dossier de bathymétries n'est configuré."

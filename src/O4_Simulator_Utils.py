@@ -629,7 +629,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
 
         hdr = tk.Frame(self, bg=self.BG)
         hdr.grid(row=2, column=0, sticky="ew", padx=8, pady=2)
-        tk.Label(hdr, text="Simulateur visuel — Ortho4XP V3",
+        tk.Label(hdr, text="Simulateur visuel — Ortho4XP V4",
             bg=self.BG, fg=self.FG2,
             font=("TkFixedFont", fs(13), "bold")).pack(side="left")
         tk.Label(hdr,

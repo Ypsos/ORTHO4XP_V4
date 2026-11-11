@@ -866,14 +866,14 @@ if HAS_TK:
             fsize_log    = 12
             fsize_btn    = 13
             fsize_launch = 20
-            self.title("Ortho4XP V3.0 — Installation Prérequis")
+            self.title("Ortho4XP V4.0 — Installation Prérequis")
             self.configure(bg=BG_GLOBAL)
             self.resizable(True, True)
             self.geometry("950x850")
             self.minsize(800, 700)
             # ── Titre ───────────────────────────────────────────────────────────
             tk.Label(
-                self, text="✈  Ortho4XP V3.0",
+                self, text="✈  Ortho4XP V4.0",
                 font=("Helvetica", fsize_title, "bold"),
                 fg=GREEN_OK, bg=BG_GLOBAL
             ).pack(pady=(20, 0))
@@ -1178,7 +1178,7 @@ int main(int argc, char **argv) {
 
 def run_console():
     print("=" * 55)
-    print("  Ortho4XP V3.0 — INSTALLATION PRÉREQUIS (mode texte)")
+    print("  Ortho4XP V4.0 — INSTALLATION PRÉREQUIS (mode texte)")
     print("=" * 55)
     print("Plateforme : {} / {}".format(SYSTEM, MACHINE))
     print("Dossier    : {}".format(BASE_DIR))

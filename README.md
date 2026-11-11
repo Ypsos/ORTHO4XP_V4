@@ -1,18 +1,18 @@
-[![ORTHO4XP V3 Banner](https://github.com/user-attachments/assets/3e1d4da4-c585-4476-8657-34843d364f30)](https://github.com/Ypsos/ORTHO4XP_V3)
+[![ORTHO4XP V3 Banner](https://github.com/user-attachments/assets/3e1d4da4-c585-4476-8657-34843d364f30)](https://github.com/Ypsos/ORTHO4XP_V4)
 
 **[🇫🇷 Français](#ortho4xp-v3--version-officielle) | [🇬🇧 English](#ortho4xp-v3--official-version)**
 
 > [!IMPORTANT]
 > ### 🍎 Utilisateurs Mac / Mac users
 > **🇫🇷 Ne téléchargez PAS le ZIP du bouton vert « Code ».** Sur Mac, l'installation se fait avec **un seul fichier DMG**, disponible dans **Releases** (colonne de droite de cette page → *Releases* → rubrique *Assets*).
-> **[⬇️ Télécharger directement ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — puis voir [Utilisation rapide → Mac](#-mac).
+> **[⬇️ Télécharger directement ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — puis voir [Utilisation rapide → Mac](#-mac).
 >
 > **🇬🇧 Do NOT download the ZIP from the green "Code" button.** On Mac, installation uses **a single DMG file**, available under **Releases** (right-hand column of this page → *Releases* → *Assets* section).
-> **[⬇️ Download ORTHO4XP_V3_Mac.dmg directly](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — then see [Quick Start → Mac](#-mac-1).
+> **[⬇️ Download ORTHO4XP_V3_Mac.dmg directly](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — then see [Quick Start → Mac](#-mac-1).
 >
 > 🪟 🐧 Windows / Linux : bouton vert « Code » → « Download ZIP » / green "Code" button → "Download ZIP".
 
-![Version](https://img.shields.io/badge/version-3.6-1f6feb?style=flat-square) ![Statut](https://img.shields.io/badge/statut%20%7C%20status-stable-2ea043?style=flat-square) ![Plateformes](https://img.shields.io/badge/macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square) ![X-Plane](https://img.shields.io/badge/X--Plane-12-ff8c00?style=flat-square) ![Licence](https://img.shields.io/badge/licence%20%7C%20license-GPL%20v3-yellow?style=flat-square)
+![Version](https://img.shields.io/badge/version-4.0-1f6feb?style=flat-square) ![Statut](https://img.shields.io/badge/moteur%20%7C%20engine-V3%20stabilis%C3%A9%20%7C%20stable-2ea043?style=flat-square) ![Plateformes](https://img.shields.io/badge/macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square) ![X-Plane](https://img.shields.io/badge/X--Plane-12-ff8c00?style=flat-square) ![Licence](https://img.shields.io/badge/licence%20%7C%20license-GPL%20v3-yellow?style=flat-square)
 
 ---
 
@@ -37,9 +37,80 @@
 > **La version moderne d'Ortho4XP**  
 > Installation automatique • Sans terminal • Pour X-Plane 12
 >
-> [![TÉLÉCHARGER LA DERNIÈRE VERSION](https://img.shields.io/badge/T%C3%89L%C3%89CHARGER%20LA%20DERNI%C3%88RE%20VERSION-00C853?style=for-the-badge&logo=download&logoColor=white)](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest)
+> [![TÉLÉCHARGER LA DERNIÈRE VERSION](https://img.shields.io/badge/T%C3%89L%C3%89CHARGER%20LA%20DERNI%C3%88RE%20VERSION-00C853?style=for-the-badge&logo=download&logoColor=white)](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest)
 > 📥 **Disponible aussi sur X-Plane.org :** [ORTHO4XP V3.5 — page de téléchargement](https://forums.x-plane.org/files/file/101562-ortho4xp-v35-ypsos/)
 ---
+
+## 🆕 Version 4.0 — évolution majeure : deux interfaces, plus rapide, plus sûre
+
+Après de longs mois consacrés en priorité à la création et à la stabilisation des modules experts, voici la **4.0**. C'est une **évolution majeure**, construite sur le **moteur V3 stabilisé** : des modules prévus de longue date, qui attendaient leur tour, sont maintenant reliés à l'interface. Ils sont assez nombreux et importants pour justifier un nouveau numéro. Le dépôt s'appelle désormais `ORTHO4XP_V4` (les anciens liens redirigent automatiquement) ; le dossier `ORTHO4XP_V3` et le fichier `ORTHO4XP_V3_Mac.dmg` gardent leur nom : vos installations et vos tuiles restent compatibles.
+
+> [!NOTE]
+> **Moteur V3 stabilisé, nouveaux modules en période de retours.** Le cœur de construction est celui de la V3 stable. Les modules ajoutés ont été vérifiés avant publication ; une courte période de retours permettra de confirmer leur bon fonctionnement sur toutes les machines (Mac, Windows, Linux). Merci de signaler tout souci sur le forum ou dans *Issues*, en joignant le rapport du **Diagnostic** (bouton « Préparer un rapport »).
+
+<img width="1285" alt="Mode simple — Ortho4XP V4" src="images/Interfaces/ModeSimple.png" />
+
+### 🧭 Nouveau : deux choix de fabrication des tuiles
+
+Les utilisateurs ont maintenant **2 choix de fabrication des tuiles** : un **mode simple** et le **mode expert**. Au lancement, le lanceur propose **deux boutons** : **« Création de tuiles mode simple »** ou **« Création de tuiles mode expert »** (l'interface complète habituelle).
+
+Le mode simple tient en **4 étapes** :
+1. **Choisissez vos tuiles** sur une carte du monde (clic = choisir / retirer, glisser = déplacer, molette ou ＋ / － = zoom). Recherche hors ligne par **aéroport (code OACI) ou ville** (base des aéroports d'X-Plane), ou par coordonnées.
+2. **Choisissez la qualité** : 🐇 Rapide · ⚖ Équilibrée (conseillée) · 💎 Haute.
+3. **Vérifiez** : place disque, durée estimée (d'après vos vraies constructions), disques branchés, problèmes de la machine, conflits de scènes.
+4. **Construisez** : progression en langage courant, bouton Arrêter, **installation automatique dans X-Plane** à la fin.
+
+Et aussi : **👁 Aperçu** de la tuile avant de construire · **source d'images automatique** (au choix) · **tuile déjà à jour non refaite** · **file d'attente** (ajouter des tuiles pendant une construction) · **choix de la langue FR/EN** · passage au mode expert à tout moment.
+
+### ⚡ Plus rapide
+- **Plusieurs images téléchargées en même temps** à l'étape 3 (réglage `max_download_slots`, 1 à 8 ; le mode simple en utilise 3).
+- **Plusieurs tuiles construites en même temps** en mode simple sur les machines puissantes (2 à partir de 8 cœurs et 16 Go, 3 à partir de 12 cœurs et 32 Go).
+- **Morceaux d'image manquants redemandés seuls**, sur un autre serveur, au lieu de retélécharger toute l'image.
+- Conversions des textures adaptées au nombre de cœurs ; **pas de mise en veille** pendant une construction (mode simple et expert) ; **son de fin**.
+
+### 🛠 Plus sûr, plus simple à entretenir
+- **🩺 Diagnostic** (menu Outils) : lit le journal et la machine, explique chaque problème en clair avec sa solution, et répare en un clic : **images blanches**, **ordre des scènes**, **tuiles en double** (copie de sauvegarde `.bak` à chaque fois).
+- **Refus de modifier la liste des scènes quand X-Plane est ouvert** (il la réécrirait).
+- En mode simple, **seules les tuiles complètes sont installées** ; une tuile avec des images incomplètes est signalée avec la marche à suivre.
+- **Bibliothèque de tuiles** : place des images et du cache par tuile, bouton « Libérer les images téléchargées ».
+
+### ⛰ Nouvelles sources de relief
+Dans `custom_dem` (mode expert, fenêtre Configuration) :
+- **« X-Plane 12 relief »** — le relief du simulateur lui-même, lu dans votre X-Plane 12 installé (aucun téléchargement, rien n'est modifié dans X-Plane). Les routes, pistes et lacs d'X-Plane tombent au même niveau que votre tuile.
+- **« Canada MRDEM-30 »** — le terrain nu de Ressources naturelles Canada (30 m, avec le lidar là où le pays a été survolé). Seule la partie de la tuile est téléchargée ; hors du Canada, le reste est complété par Copernicus.
+- **« ANADEM »** — le sol sous la forêt pour l'Amérique du Sud (30 m). Il est publié en grandes dalles : Ortho4XP vous dit laquelle télécharger une fois (ex. `anadem_v1_mgrs_23k.tif`) et où la ranger ; en attendant, Copernicus est utilisé.
+- Les États-Unis restaient déjà couverts (USGS 1″ et 1/3″), et votre propre relief (IGN, Sonny, tout pays) passe toujours par le module **Altimétrie**.
+
+### 🗺 Choisir et soigner ses tuiles (mode simple et mode expert)
+- **Autour d'un aéroport** : un code OACI ou un nom, un rayon (sa tuile, 20, 50 ou 100 km) → les tuiles sont ajoutées d'un coup ; la pleine mer est laissée de côté (si X-Plane 12 est trouvé). Même fenêtre dans le mode expert (fenêtre des tuiles, Batch Build).
+- **Plusieurs tuiles tapées d'un coup** (« +43+005 +43+006 »).
+- **Netteté au choix** : ZL du paysage et ZL des aéroports (par ex. ZL17 + aéroports ZL19), aéroports **avec code OACI seulement** si vous le voulez. Le maillage 3D suit tout seul (pas de triangles).
+- **Zones plus nettes dessinées** sur la tuile choisie (fenêtre Zones ZL de l'expert, ouverte depuis le mode simple).
+- **Couleurs des photos** : comme la source, adoucies ou très adoucies, avec un **aperçu avant / après**.
+- **Mes réglages** : enregistrez vos choix sous un nom et rappelez-les en un clic.
+- **Imagerie de la source sur la carte** pour les tuiles choisies, avant de construire.
+- **Avancement clair** : « Étape 3 / 5 : bords de mer — 69 % — reste ~2 min ».
+- **Deux X-Plane** (test et vol) : la fenêtre affiche le X-Plane utilisé et permet d'en changer.
+- **File d'attente** : ajoutez des tuiles pendant une construction, retirez celles qui ne sont pas encore commencées.
+
+### ☁ Nuages sur les images
+Ortho4XP repère les nuages sur les images téléchargées d'une tuile (sans rien télécharger de plus), vous les montre en rouge, et remplace ceux que vous cochez par la même zone prise chez une autre source, couleurs accordées et bords fondus. Les photos d'origine sont gardées : un bouton les remet. Les toits blancs et les zones sans donnée ne sont pas pris pour des nuages, et vous validez chaque image avant tout changement.
+
+### 🗃 Bibliothèque et place disque
+- **Ajouter des tuiles d'un dossier** (un autre disque, une ancienne installation) sans les copier.
+- **Déplacer une tuile vers un autre disque** : copie complète vérifiée, puis X-Plane pointe sur la nouvelle copie ; l'ancienne n'est effacée que si vous le dites.
+- **Reconstruire une tuile** avec ses réglages, et **repérer les routes / forêts dessinées en double** par deux scènes.
+- **🧹 Grand nettoyage** : par tuile, la place des images, des données OSM, des masques, des bords de mer, des aperçus et du relief téléchargé ; vous cochez, vous confirmez. Les tuiles construites restent utilisables dans X-Plane.
+- **🆕 Nouvelle version** : une ligne vous prévient (rien n'est installé tout seul) ; menu Aide → Vérifier les mises à jour.
+
+### ✈ Pourquoi pas de chargement des images en vol (« Live ») ?
+C'est un choix volontaire. Ortho4XP **privilégie la qualité** : chaque tuile est construite une fois, avec le temps qu'il faut pour soigner ce qu'un chargement pendant le vol ne peut pas garantir — **les bords de mer** (fin du damier et des triangles transparents), les masques d'eau, la bathymétrie, le relief national, la correction des couleurs et des images. Les serveurs des fournisseurs d'images supportent mal les téléchargements massifs et continus pendant les vols (risque de blocage), et les réseaux sont déjà très chargés. Une tuile construite reste sur votre disque, fonctionne **sans connexion**, pour **tous les avions et toutes les altitudes** : du VFR à basse altitude au liner en croisière, rien n'est à refaire. Si vous utilisez par ailleurs un outil de chargement en vol, vos tuiles Ortho4XP s'affichent en priorité là où vous les avez construites, dès qu'elles sont placées au-dessus dans la liste des scènes.
+
+### 🔒 Ce qui ne change pas
+Le pipeline mer (fin du damier et des triangles transparents), les masques, la bathymétrie, l'altimétrie nationale, les générateurs (`.lay`, `.comb`, extents), le scoring des sources, la correction d'imagerie et le mode expert complet sont **conservés à l'identique**. Les nouveautés de vitesse sont **désactivées par défaut en mode expert** (réglage à 1 = comportement d'origine) et ne s'activent que si vous le choisissez.
+
+### 🐍 Python
+Ortho4XP reste sur **Python 3.12** (3.11 accepté). Python 3.14 n'est pas encore possible pour tous : un module indispensable au calcul des masques d'eau (`scikit-fmm`) n'est pas encore fourni prêt à l'emploi pour Python 3.14 sur toutes les plateformes. Nous passerons à 3.14 dès que ce sera le cas, sans rien vous demander.
 
 ## 🆕 Nouveautés de la version 3.6
 
@@ -83,7 +154,7 @@ Ortho4XP V3 est libre sous GPL v3. D'autres projets peuvent reprendre son archit
 
 La version officielle maintenue ici reste **gratuite**, sans demande de donation ni bouton de soutien financier.
 
-**Dépôt officiel :** https://github.com/Ypsos/ORTHO4XP_V3
+**Dépôt officiel :** https://github.com/Ypsos/ORTHO4XP_V4
 
 ---
 
@@ -248,7 +319,7 @@ Tous sont **autonomes** : aucun fichier du moteur d'origine n'est modifié. Si u
 <img width="890" height="272" alt="Creation_Lanceur_fr" src="https://github.com/user-attachments/assets/175cb21e-f6fa-4c48-a1cd-e6b98031698c" />
 
 
-<img width="888" height="805" alt="Lanceur_FR" src="https://github.com/user-attachments/assets/b9ab08ed-8095-4ef3-9367-b393c8474183" />
+<img width="897" alt="Lanceur Ortho4XP V4.0" src="images/Interfaces/Lanceur_V4.png" />
 
 
 <img width="3440" height="1044" alt="Interface_principale_FR" src="https://github.com/user-attachments/assets/e4645651-166f-4710-8c6d-c68dac9797a1" />
@@ -380,7 +451,7 @@ Fichier modifié : `src/O4_Menu_Avance.py` (aucun fichier de langue impacté).
 
 ### 🍎 Mac
 
-> **Un seul téléchargement :** **[⬇️ Télécharger ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — il se trouve aussi dans **Releases** (colonne de droite de la page GitHub → rubrique *Assets*). ⚠️ Ne pas utiliser le ZIP du bouton vert « Code » sur Mac.
+> **Un seul téléchargement :** **[⬇️ Télécharger ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — il se trouve aussi dans **Releases** (colonne de droite de la page GitHub → rubrique *Assets*). ⚠️ Ne pas utiliser le ZIP du bouton vert « Code » sur Mac.
 
 1. Double-cliquez sur le fichier `.dmg` téléchargé : le disque **ORTHO4XP V3** s'ouvre
 2. Double-cliquez sur **`Lanceur_Installation_Prerequis`**
@@ -463,9 +534,80 @@ Données altimétriques (relief) : Modèles numériques de terrain LiDAR de Sonn
 > **The modern version of Ortho4XP**  
 > Automatic installation • No terminal required • For X-Plane 12
 >
-> [![DOWNLOAD LATEST VERSION](https://img.shields.io/badge/DOWNLOAD%20LATEST%20VERSION-00C853?style=for-the-badge&logo=download&logoColor=white)](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest)
+> [![DOWNLOAD LATEST VERSION](https://img.shields.io/badge/DOWNLOAD%20LATEST%20VERSION-00C853?style=for-the-badge&logo=download&logoColor=white)](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest)
 > 📥 **Also available on X-Plane.org:** [ORTHO4XP V3.5 — download page](https://forums.x-plane.org/files/file/101562-ortho4xp-v35-ypsos/)
 ---
+
+## 🆕 Version 4.0 — major update: two interfaces, faster, safer
+
+After long months spent mainly on creating and stabilising the expert modules, here is **4.0**. It is a **major update** built on the **stabilised V3 engine**: modules planned long ago, which were waiting their turn, are now connected to the interface. They are numerous and important enough to justify a new number. The repository is now called `ORTHO4XP_V4` (old links redirect automatically); the `ORTHO4XP_V3` folder and the `ORTHO4XP_V3_Mac.dmg` file keep their names: your installations and tiles remain compatible.
+
+> [!NOTE]
+> **Stabilised V3 engine, new modules in a feedback period.** The build core is the one of the stable V3. The added modules were checked before release; a short feedback period will confirm they work well on every machine (Mac, Windows, Linux). Please report any issue on the forum or in *Issues*, attaching the **Diagnostic** report ("Prepare a report" button).
+
+<img width="1285" alt="Simple mode — Ortho4XP V4" src="images/Interfaces/ModeSimple.png" />
+
+### 🧭 New: two ways to build tiles
+
+Users now have **2 choices for building tiles**: a **simple mode** and the **expert mode**. At start-up the launcher offers **two buttons**: **"Tile creation – simple mode"** or **"Tile creation – expert mode"** (the usual full interface).
+
+Simple mode is **4 steps**:
+1. **Choose your tiles** on a world map (click = choose / remove, drag = move, wheel or ＋ / － = zoom). Offline search by **airport (ICAO code) or city** (X-Plane's airport database), or by coordinates.
+2. **Choose the quality**: 🐇 Fast · ⚖ Balanced (advised) · 💎 High.
+3. **Check**: disk space, estimated time (from your real builds), connected drives, machine problems, scenery conflicts.
+4. **Build**: progress in plain language, Stop button, **automatic installation into X-Plane** at the end.
+
+Also: **👁 Preview** of the tile before building · **automatic imagery source** (optional) · **tiles already up to date are not rebuilt** · **queue** (add tiles while a build runs) · **FR/EN language choice** · switch to expert mode at any time.
+
+### ⚡ Faster
+- **Several images downloaded at the same time** in step 3 (`max_download_slots` setting, 1 to 8; simple mode uses 3).
+- **Several tiles built at the same time** in simple mode on powerful machines (2 from 8 cores and 16 GB, 3 from 12 cores and 32 GB).
+- **Missing image pieces requested again on their own**, from another server, instead of downloading the whole image again.
+- Texture conversions matched to the number of cores; **no sleep** during a build (simple and expert mode); **end sound**.
+
+### 🛠 Safer, easier to maintain
+- **🩺 Diagnostic** (Tools menu): reads the log and the machine, explains each problem in plain words with its fix, and repairs in one click: **white images**, **scenery order**, **duplicate tiles** (`.bak` backup every time).
+- **Scenery list is never changed while X-Plane is running** (it would rewrite it).
+- In simple mode, **only complete tiles are installed**; a tile with incomplete images is reported with what to do.
+- **Tile library**: space used by images and cache per tile, "Free downloaded images" button.
+
+### ⛰ New elevation sources
+In `custom_dem` (expert mode, Configuration window):
+- **"X-Plane 12 relief"** — the simulator's own relief, read from your installed X-Plane 12 (no download, nothing is changed in X-Plane). X-Plane's roads, runways and lakes sit at the same level as your tile.
+- **"Canada MRDEM-30"** — Natural Resources Canada's bare terrain (30 m, with lidar where the country was flown). Only the tile's part is downloaded; outside Canada, the rest is filled from Copernicus.
+- **"ANADEM"** — the ground under the forest for South America (30 m). It is published as large tiles: Ortho4XP tells you which one to download once (e.g. `anadem_v1_mgrs_23k.tif`) and where to put it; meanwhile, Copernicus is used.
+- The United States were already covered (USGS 1″ and 1/3″), and your own relief (IGN, Sonny, any country) still goes through the **Elevation** module.
+
+### 🗺 Choosing and refining your tiles (simple and expert mode)
+- **Around an airport**: an ICAO code or a name, a radius (its tile, 20, 50 or 100 km) → the tiles are added at once; open sea is left out (when X-Plane 12 is found). Same window in expert mode (tiles window, Batch Build).
+- **Several tiles typed at once** ("+43+005 +43+006").
+- **Sharpness of your choice**: scenery ZL and airport ZL (e.g. ZL17 + airports ZL19), **ICAO-coded airports only** if you wish. The 3D mesh follows by itself (no triangles).
+- **Sharper zones drawn** on the chosen tile (expert Custom ZL window, opened from simple mode).
+- **Photo colours**: as the source, toned down or toned down a lot, with a **before / after preview**.
+- **My settings**: save your choices under a name and recall them in one click.
+- **Source imagery on the map** for the chosen tiles, before building.
+- **Clear progress**: "Step 3 / 5: coastline — 69 % — left ~2 min".
+- **Two X-Planes** (test and flying): the window shows the X-Plane in use and lets you change it.
+- **Queue**: add tiles while a build runs, remove those not started yet.
+
+### ☁ Clouds on the images
+Ortho4XP finds clouds on a tile's downloaded images (with nothing more to download), shows them to you in red, and replaces those you tick with the same area taken from another source, colours matched and edges blended. The original photos are kept: one button puts them back. White roofs and no-data areas are not taken for clouds, and you approve each image before anything changes.
+
+### 🗃 Library and disk space
+- **Add tiles from a folder** (another disk, an older install) without copying them.
+- **Move a tile to another disk**: full checked copy, then X-Plane points to the new copy; the old one is deleted only if you say so.
+- **Rebuild a tile** with its settings, and **spot roads / forests drawn twice** by two sceneries.
+- **🧹 Big cleanup**: per tile, the space of images, OSM data, masks, coastline patches, previews and downloaded relief; you tick, you confirm. Built tiles stay usable in X-Plane.
+- **🆕 New version**: a line tells you (nothing is installed by itself); Help menu → Check for updates.
+
+### ✈ Why no in-flight imagery loading ("Live")?
+It is a deliberate choice. Ortho4XP **puts quality first**: each tile is built once, taking the time needed for what loading during the flight cannot guarantee — **coastlines** (no more checkerboard or transparent triangles), water masks, bathymetry, national relief, colour and image correction. Imagery providers' servers cope badly with massive, continuous downloads during flights (risk of being blocked), and networks are already very busy. A built tile stays on your disk, works **offline**, for **every aircraft and every altitude**: from low VFR to an airliner in cruise, nothing has to be redone. If you also use an in-flight loading tool, your Ortho4XP tiles show first where you built them, as soon as they are placed above it in the scenery list.
+
+### 🔒 What does not change
+The sea pipeline (no more checkerboard or transparent triangles), masks, bathymetry, national elevation, the generators (`.lay`, `.comb`, extents), source scoring, imagery correction and the full expert mode are **kept identical**. The speed features are **off by default in expert mode** (setting at 1 = original behaviour) and only switch on if you choose to.
+
+### 🐍 Python
+Ortho4XP stays on **Python 3.12** (3.11 accepted). Python 3.14 is not yet possible for everyone: a module needed to compute water masks (`scikit-fmm`) is not yet provided ready-to-use for Python 3.14 on every platform. We will move to 3.14 as soon as it is, with nothing for you to do.
 
 ## 🆕 What's new in version 3.6
 
@@ -509,7 +651,7 @@ Ortho4XP V3 is free software under GPL v3. Other projects may reuse its architec
 
 The official version maintained here remains **completely free**, with no donation requests or support buttons.
 
-**Official repository:** https://github.com/Ypsos/ORTHO4XP_V3
+**Official repository:** https://github.com/Ypsos/ORTHO4XP_V4
 
 ---
 
@@ -675,7 +817,7 @@ They all follow the same design rule: **a self-contained file that modifies no p
 <img width="890" height="272" alt="Creation_Lanceur_fr" src="https://github.com/user-attachments/assets/4c8dc32f-d7b5-4395-865f-1617e902e55f" />
 
 
-<img width="888" height="805" alt="Lanceur_FR" src="https://github.com/user-attachments/assets/dd5a476d-2597-466f-ad3b-f4e6a411c5dd" />
+<img width="897" alt="Ortho4XP V4.0 Launcher" src="images/Interfaces/Lanceur_V4.png" />
 
 
 <img width="3440" height="1044" alt="Interface_principale_FR" src="https://github.com/user-attachments/assets/8d747b98-591b-47be-927d-a743673f9caa" />
@@ -696,7 +838,7 @@ Several interface colors are already available. Users can modify colors within a
 
 ### 9.3 Main Interface and Color Check
 
-[![Color Check](https://github.com/Ypsos/ORTHO4XP_V3/raw/ORTHO4XP_V3/04_Color%20Check_01.jpeg)](https://github.com/Ypsos/ORTHO4XP_V3/blob/ORTHO4XP_V3/04_Color%20Check_01.jpeg)
+[![Color Check](https://github.com/Ypsos/ORTHO4XP_V4/raw/ORTHO4XP_V3/04_Color%20Check_01.jpeg)](https://github.com/Ypsos/ORTHO4XP_V4/blob/ORTHO4XP_V3/04_Color%20Check_01.jpeg)
 
 ### 9.4 Imagery Correction — Viewing Tile Textures
 
@@ -809,7 +951,7 @@ Modified file: `src/O4_Menu_Avance.py` (no language file impacted).
 
 ### 🍎 Mac
 
-> **A single download:** **[⬇️ Download ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V3/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — it is also under **Releases** (right-hand column of the GitHub page → *Assets* section). ⚠️ Do not use the green "Code" button ZIP on Mac.
+> **A single download:** **[⬇️ Download ORTHO4XP_V3_Mac.dmg](https://github.com/Ypsos/ORTHO4XP_V4/releases/latest/download/ORTHO4XP_V3_Mac.dmg)** — it is also under **Releases** (right-hand column of the GitHub page → *Assets* section). ⚠️ Do not use the green "Code" button ZIP on Mac.
 
 1. Double-click the downloaded `.dmg` file: the **ORTHO4XP V3** disk opens
 2. Double-click **`Lanceur_Installation_Prerequis`**

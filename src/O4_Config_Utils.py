@@ -153,6 +153,13 @@ a particular server.",
         "values": (1, 2, 3, 4, 5, 6, 7, 8),
         "hint": "Number of parallel threads for dds conversion. Should be mainly dictated by the number of cores in your CPU.",
     },
+    "max_download_slots": {
+        "module": "TILE",
+        "type": int,
+        "default": 1,
+        "values": (1, 2, 3, 4, 5, 6, 7, 8),
+        "hint": "Number of imagery textures downloaded at the same time during step 3. 1 = original behaviour (one after the other). 2 to 4 is usually much faster on a good connection; higher values may make some servers refuse requests. / Nombre d'images téléchargées en même temps à l'étape 3. 1 = comportement d'origine (une après l'autre). 2 à 4 est en général bien plus rapide avec une bonne connexion ; au-delà, certains serveurs peuvent refuser les demandes.",
+    },
     "check_tms_response": {
         "module": "IMG",
         "type": bool,
@@ -531,6 +538,7 @@ list_app_vars = [
     "skip_downloads",
     "skip_converts",
     "max_convert_slots",
+    "max_download_slots",
     "check_tms_response",
     "http_timeout",
     "max_connect_retries",
@@ -941,7 +949,7 @@ class Ortho4XP_Config(tk.Toplevel):
         except Exception:
             pass
         self.option_add("*Font", "TkFixedFont")
-        self.title("Ortho4XP V3 Config")
+        self.title("Ortho4XP V4 Config")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         if self.winfo_screenheight() >= 1024:

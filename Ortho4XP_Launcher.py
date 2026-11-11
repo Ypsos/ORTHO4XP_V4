@@ -45,7 +45,12 @@ try:
     if _saved:
         O4_Lang._load_lang(_saved)
     else:
-        O4_Lang._load_lang("EN")
+        # Aucune langue enregistrée (nouvel utilisateur) : langue du
+        # système, détectée par O4_Lang (repli anglais).
+        try:
+            O4_Lang._load_lang(O4_Lang._resolve_startup_lang())
+        except Exception:
+            O4_Lang._load_lang("EN")
     from O4_Lang import tr
 except Exception:
     def tr(k): return k   # fallback si O4_Lang absent
@@ -55,9 +60,9 @@ except Exception:
 # dans src/O4_Version.py suffit à mettre à jour le titre partout.
 try:
     import O4_Version as _O4V
-    APP_VERSION = getattr(_O4V, "version_short", None) or "V3.0"
+    APP_VERSION = getattr(_O4V, "version_short", None) or "V4.0"
 except Exception:
-    APP_VERSION = "V3.0"
+    APP_VERSION = "V4.0"
 
 # ── Vérification nom de dossier GitHub ──────────────────────────────────────
 # GitHub crée automatiquement un double nom : ORTHO4XP-V3-ORTHO4XP_V3
@@ -348,9 +353,25 @@ class Launcher(tk.Tk):
                  font=("Helvetica", 14, "bold"), fg="#a6e3a1",
                  bg=BG_GLOBAL).pack(side="right", padx=(4, 18))
 
-        # Gros bouton LANCER en dessous
-        HoverButton(self, tr("▶️ LANCER ORTHO4XP"), self.launch_ortho, 
-                    width=800, height=70, font_size=20).pack(pady=(15, 30))
+        # Deux gros boutons côte à côte (nov. 2026), même hauteur que l'ancien
+        # bouton unique « LANCER ORTHO4XP » (retiré de l'affichage seulement :
+        # launch_ortho existe toujours et sert au mode expert).
+        #   • mode simple  : fenêtre Grand public (carte) ouverte au démarrage
+        #   • mode expert  : démarrage identique à l'ancien bouton LANCER
+        _fr = (self._current_lang_code() == "FR")
+        _row = tk.Frame(self, bg=BG_GLOBAL)
+        _row.pack(pady=(15, 30))
+        HoverButton(_row,
+                    "🧭 Création de tuiles mode simple" if _fr
+                    else "🧭 Tile creation — simple mode",
+                    self.launch_ortho_simple,
+                    width=390, height=70, font_size=15).pack(side="left",
+                                                             padx=(0, 10))
+        HoverButton(_row,
+                    "🛠 Création de tuiles mode expert" if _fr
+                    else "🛠 Tile creation — expert mode",
+                    self.launch_ortho,
+                    width=390, height=70, font_size=15).pack(side="left")
 
         self._log(f"📍 Dossier : {BASE_DIR}")
         self.check_integrity()
@@ -1123,7 +1144,7 @@ int main(int argc, char **argv) {
         sh.chmod(sh.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
         desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
-            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V3 Lanceur\n"
+            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V4 Lanceur\n"
             f"Exec={sh}\nPath={BASE_DIR}\nTerminal=false\nType=Application\n",
             encoding="utf-8")
         desktop.chmod(desktop.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
@@ -1198,7 +1219,7 @@ exec "./venv/bin/python3" "Ortho4XP_Launcher.py"
 
         desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
-            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V3 Lanceur\n"
+            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V4 Lanceur\n"
             f"Exec={sh_path}\nPath={BASE_DIR}\n"
             f"Terminal=false\nType=Application\nCategories=Utility;\n",
             encoding="utf-8")
@@ -1227,11 +1248,21 @@ exec "./venv/bin/python3" "Ortho4XP_Launcher.py"
             encoding="utf-8")
         self._log("✅ Lanceur ORTHO4XP.vbs créé — double-clic pour lancer !")
 
-    def launch_ortho(self):
+    def launch_ortho_simple(self):
+        """Création de tuiles mode simple : même lancement que launch_ortho,
+        avec la consigne O4X_START_MODE=simple (fenêtre Grand public ouverte
+        au démarrage par Ortho4XP.py)."""
+        self.launch_ortho(start_mode="simple")
+
+    def launch_ortho(self, start_mode=None):
         py_exe = str(VENV_PY) if VENV_PY.exists() else sys.executable
         if ORTHO_PY.exists():
             env = os.environ.copy()
             env["PYTHONPATH"] = str(SRC_DIR)
+            if start_mode:
+                env["O4X_START_MODE"] = start_mode
+            else:
+                env.pop("O4X_START_MODE", None)
             subprocess.Popen([py_exe, str(ORTHO_PY)], cwd=str(BASE_DIR), env=env, shell=False)
             self._log("🚀 Ortho4XP lancé !")
             self.after(1500, self.destroy)

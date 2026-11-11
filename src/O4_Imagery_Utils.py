@@ -1455,6 +1455,54 @@ def get_and_paste_wmts_part(
 ################################################################################
 
 ################################################################################
+# Morceaux manquants redemandés seuls (Roland/Ypsos, nov. 2026)
+# ------------------------------------------------------------------------------
+# Après le premier passage, seuls les morceaux qui ont échoué (carrés restés
+# blancs) sont redemandés UNE fois, après une courte pause, avec une nouvelle
+# connexion ; chaque demande tire de nouveau son serveur au hasard
+# ({switch:...}). Si tout est récupéré, l'image est complète sans être
+# retéléchargée en entier. Sinon, le comportement d'origine continue
+# (nouvel essai complet dans download_jpeg_ortho). Rien n'est fait si
+# check_tms_response est désactivé ou pour une source locale.
+_PART_RETRY_PAUSE = 3
+
+
+def _parallel_execute_retry(task, queue_in, nbr_workers, progress, provider):
+    failed = []
+    failed_lock = threading.Lock()
+
+    def _task(*args):
+        ok = task(*args)
+        if not ok:
+            with failed_lock:
+                failed.append(args)
+        return ok
+
+    success = parallel_execute(_task, queue_in, nbr_workers, progress)
+    if success or UI.red_flag or not failed or not check_tms_response:
+        return success
+    if provider.get("request_type") == "local_tms":
+        return success
+    UI.vprint(2, "   %d missing piece(s): asking them again in %d sec."
+              % (len(failed), _PART_RETRY_PAUSE))
+    time.sleep(_PART_RETRY_PAUSE)
+    if UI.red_flag:
+        return 0
+    again = list(failed)
+    del failed[:]
+    new_session = requests.Session()
+    retry_queue = queue.Queue()
+    for args in again:
+        args = list(args)
+        if len(args) > 7:
+            args[7] = new_session
+        retry_queue.put(args)
+    success2 = parallel_execute(_task, retry_queue,
+                                max(1, min(nbr_workers, len(again))))
+    return 1 if (success2 and not failed) else 0
+
+
+################################################################################
 def build_texture_from_tilbox(tilbox, zoomlevel, provider, progress=None):
     (til_x_min, til_y_min, til_x_max, til_y_max) = tilbox
     parts_x = til_x_max - til_x_min
@@ -1476,8 +1524,9 @@ def build_texture_from_tilbox(tilbox, zoomlevel, provider, progress=None):
         max_threads = int(provider["max_threads"])
     else:
         max_threads = 16
-    success = parallel_execute(
-        get_and_paste_wmts_part, download_queue, max_threads, progress
+    success = _parallel_execute_retry(
+        get_and_paste_wmts_part, download_queue, max_threads, progress,
+        provider,
     )
     return (success, big_image)
 
@@ -1591,12 +1640,14 @@ def build_texture_from_bbox_and_size(t_bbox, t_epsg, t_size, provider):
     else:
         max_threads = 16
     if provider["request_type"] == "wms":
-        success = parallel_execute(
-            get_and_paste_wms_part, download_queue, max_threads
+        success = _parallel_execute_retry(
+            get_and_paste_wms_part, download_queue, max_threads, None,
+            provider,
         )
     elif provider["request_type"] in ["wmts", "tms", "local_tms"]:
-        success = parallel_execute(
-            get_and_paste_wmts_part, download_queue, max_threads
+        success = _parallel_execute_retry(
+            get_and_paste_wmts_part, download_queue, max_threads, None,
+            provider,
         )
     if warp_needed:
         UI.vprint(3, "Warp needed")

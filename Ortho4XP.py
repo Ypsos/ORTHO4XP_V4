@@ -114,7 +114,12 @@ def main():
             if _saved:
                 O4_Lang._load_lang(_saved)
             else:
-                O4_Lang._load_lang("EN")
+                # Aucune langue enregistrée (nouvel utilisateur) : langue du
+                # système, détectée par O4_Lang (repli anglais).
+                try:
+                    O4_Lang._load_lang(O4_Lang._resolve_startup_lang())
+                except Exception:
+                    O4_Lang._load_lang("EN")
             app = GUI.Ortho4XP_GUI()
             # ── Journal unifié (ADDITIF) ────────────────────────────────────
             # Active le collecteur de logs APRÈS que la fenêtre a pris la main
@@ -127,6 +132,33 @@ def main():
                 _LOGCOL.activate()
             except Exception:
                 pass
+            # ── « Création de tuiles mode simple » (ADDITIF, nov. 2026) ──────
+            # Le lanceur peut demander d'ouvrir la fenêtre simple au démarrage
+            # via la variable d'environnement O4X_START_MODE=simple (pas par un
+            # argument : un argument ferait basculer en ligne de commande).
+            # Sans cette variable : démarrage strictement identique (Expert).
+            # Import protégé : si le module manque, Ortho démarre normalement.
+            # La fenêtre expert est cachée AVANT app.mainloop() : elle n'est
+            # donc jamais dessinée (pas de clignotement). Si la fenêtre simple
+            # ne peut pas s'ouvrir, la fenêtre expert réapparaît : Ortho4XP
+            # n'est jamais invisible.
+            if os.environ.get("O4X_START_MODE", "") == "simple":
+                try:
+                    import O4_Grand_Public_Utils as _GP
+                    app.withdraw()
+
+                    def _open_simple():
+                        try:
+                            _GP.run_grand_public(app)
+                        except Exception:
+                            app.deiconify()
+
+                    app.after(200, _open_simple)
+                except Exception:
+                    try:
+                        app.deiconify()
+                    except Exception:
+                        pass
             app.mainloop()
             print("Ortho4XP fermé. Bon vol !")
         except Exception as e:

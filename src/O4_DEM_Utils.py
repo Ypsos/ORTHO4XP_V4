@@ -42,6 +42,19 @@ available_sources = (
     # cette source n'est pas sélectionnée, le comportement reste identique.
     "COP30",
     "Copernicus GLO-30 (from AWS Open Data) - worldwide",
+    # AJOUT ADDITIF (nov. 2026, Roland/Ypsos) — relief d'X-Plane 12 lui-même,
+    # lu dans la scène mondiale déjà installée (aucun téléchargement), via
+    # le module O4_XP12_Relief_Utils (DSFTool → .hgt). Même relief que le
+    # simulateur : routes, pistes et lacs d'X-Plane tombent au même niveau.
+    "XP12",
+    "X-Plane 12 relief (from your X-Plane 12 install) - worldwide",
+    # AJOUT ADDITIF (nov. 2026, Roland/Ypsos) — reliefs « terrain nu » des
+    # Amériques, via le module O4_America_DEM_Utils (complétés par
+    # Copernicus GLO-30 là où ils n'ont pas de donnée).
+    "CA_MRDEM",
+    "Canada MRDEM-30 bare terrain (NRCan, lidar where flown) - Canada",
+    "ANADEM",
+    "ANADEM bare terrain (South America, tile to download once)",
 )
 
 global_sources = ("View", "SRTM", "ALOS")
@@ -60,6 +73,16 @@ global_sources = ("View", "SRTM", "ALOS")
 # ---------------------------------------------------------------------------
 def cop30_file_name(lat, lon):
     return FNAMES.base_file_name(lat, lon) + "_COP30.tif"
+
+
+def america_file_name(source, lat, lon):
+    """Relief Canada / Amérique du Sud converti, rangé avec les autres."""
+    return FNAMES.base_file_name(lat, lon) + "_" + source + ".tif"
+
+
+def xp12_file_name(lat, lon):
+    """Relief X-Plane 12 converti en .hgt, rangé avec les autres altitudes."""
+    return FNAMES.base_file_name(lat, lon) + "_XP12.hgt"
 
 
 def _L_dem(fr, en):
@@ -187,7 +210,12 @@ class DEM:
                         self.alt_dem,
                     ) = read_elevation_from_file(
                         FNAMES.elevation_data(short_source, self.lat, self.lon)
-                        or cop30_file_name(self.lat, self.lon),
+                        or (xp12_file_name(self.lat, self.lon)
+                            if short_source == "XP12"
+                            else america_file_name(short_source, self.lat,
+                                                   self.lon)
+                            if short_source in ("CA_MRDEM", "ANADEM")
+                            else cop30_file_name(self.lat, self.lon)),
                         self.lat,
                         self.lon,
                         info_only,
@@ -956,6 +984,45 @@ def ensure_elevation(source, lat, lon, verbose=True):
                 out.write(r.content)
             except:
                 return 0
+    elif source in ("CA_MRDEM", "ANADEM"):
+        # AJOUT ADDITIF — reliefs « terrain nu » des Amériques (module
+        # O4_America_DEM_Utils). Canada : MRDEM-30 (COG public, seule la
+        # fenêtre de la tuile est lue). Amérique du Sud : dalle ANADEM rangée
+        # par l'utilisateur dans Elevation_data/ANADEM/. Ce qui manque est
+        # complété par Copernicus GLO-30 (même téléchargement que la source
+        # COP30). Rien d'utilisable : renvoie 0 (comportement habituel).
+        out = america_file_name(source, lat, lon)
+        try:
+            import O4_America_DEM_Utils as AM
+        except Exception as e:
+            UI.lvprint(1, "    ERROR: Americas relief module missing:", e)
+            return 0
+        cop = (lambda la, lo: ensure_elevation("COP30", la, lo, verbose),
+               cop30_file_name)
+        fn = AM.ensure_canada if source == "CA_MRDEM" else AM.ensure_anadem
+        try:
+            return fn(lat, lon, out, cop30=cop,
+                      log=lambda m: UI.lvprint(1, m))
+        except Exception as e:
+            UI.lvprint(1, "    ERROR:", source, e)
+            return 0
+    elif source == "XP12":
+        # AJOUT ADDITIF — relief d'X-Plane 12 (scène mondiale installée).
+        # Aucun réseau : le DSF de la tuile est lu par DSFTool (module
+        # O4_XP12_Relief_Utils) et sa grille d'altitude enregistrée en .hgt.
+        # Tuile sans scène X-Plane, X-Plane introuvable ou DSFTool absent :
+        # renvoie 0 → comportement habituel (altitude zéro), sans planter.
+        xp_path = xp12_file_name(lat, lon)
+        if os.path.exists(xp_path):
+            UI.vprint(2, "   Recycling ", xp_path)
+            return 1
+        try:
+            import O4_XP12_Relief_Utils as XPR
+        except Exception as e:
+            UI.lvprint(1, "    ERROR: X-Plane 12 relief module missing:", e)
+            return 0
+        return 1 if XPR.extract_elevation(
+            lat, lon, xp_path, log=lambda m: UI.lvprint(1, m)) else 0
     elif source == "COP30":
         # AJOUT ADDITIF — Copernicus GLO-30 (30 m), source mondiale libre.
         #

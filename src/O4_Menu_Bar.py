@@ -133,6 +133,35 @@ def _wire(menu, window, label, method_name):
         menu.add_command(label=label, state="disabled")
 
 
+def _safe_call(fn):
+    try:
+        fn()
+    except Exception:
+        pass
+
+
+class _CallProxy(object):
+    """Fenêtre « vue » par la barre de menus : chaque méthode appelée passe
+    d'abord par before() (ex. réafficher la fenêtre expert cachée)."""
+
+    def __init__(self, real, before):
+        self._real = real
+        self._before = before
+
+    def __getattr__(self, name):
+        attr = getattr(self._real, name)
+        if not callable(attr):
+            return attr
+
+        def _call(*a, **k):
+            try:
+                self._before()
+            except Exception:
+                pass
+            return attr(*a, **k)
+        return _call
+
+
 def _about(window):
     """Boîte « À propos » — titre de la fenêtre, auteur, crédit d'origine et
     licence. Utilisée par le lanceur ET par la fenêtre principale (même
@@ -142,7 +171,7 @@ def _about(window):
     try:
         titre = window.title()
     except Exception:
-        titre = "Ortho4XP V3"
+        titre = "Ortho4XP V4"
     texte = (
         titre + "\n\n"
         + L("Auteur : Roland (Ypsos)", "Author: Roland (Ypsos)") + "\n"
@@ -267,51 +296,61 @@ def _add_tutos_submenu(parent, window, mkw):
                 "Step by step — using the modules"), menu=sub)
 
 
-def install_menubar(window):
+def install_menubar(window, host=None, before=None):
     """Construit et attache la barre de menus native sur `window`.
 
     `window` est la fenêtre principale Ortho4XP_GUI (un tk.Tk). La fonction
     garde une référence à la barre sur la fenêtre (window._menubar) pour
     éviter tout ramassage mémoire, et renvoie la barre.
     """
+    # (nov. 2026) host : fenêtre qui PORTE la barre (par défaut window) ;
+    # le mode simple s'en sert pour avoir la même barre que l'Expert.
+    # before : appelé avant chaque commande de la fenêtre expert (le mode
+    # simple y fait réapparaître la fenêtre expert cachée, sinon ses
+    # fenêtres filles resteraient invisibles). Sans ces 2 paramètres :
+    # comportement d'origine, identique.
+    host = host if host is not None else window
+    cmd = window if before is None else _CallProxy(window, before)
     mkw = _menu_kwargs()
-    menubar = tk.Menu(window)
+    menubar = tk.Menu(host)
 
     # ── Fichier ───────────────────────────────────────────────────────
     m_file = tk.Menu(menubar, tearoff=0, **mkw)
-    _wire(m_file, window, L("Dossier de base…", "Base folder…"),
+    _wire(m_file, cmd, L("Dossier de base…", "Base folder…"),
           "choose_custom_build_dir")
     m_file.add_separator()
-    _wire(m_file, window, L("Quitter", "Quit"), "exit_prg")
+    _wire(m_file, cmd, L("Quitter", "Quit"), "exit_prg")
     menubar.add_cascade(label=L("Fichier", "File"), menu=m_file)
 
     # ── Configuration ─────────────────────────────────────────────────
     m_cfg = tk.Menu(menubar, tearoff=0, **mkw)
-    _wire(m_cfg, window, L("Préférences / Configuration…", "Preferences / Configuration…"),
+    _wire(m_cfg, cmd, L("Préférences / Configuration…", "Preferences / Configuration…"),
           "open_config_window")
-    _wire(m_cfg, window, L("Providers personnels…", "Personal providers…"),
+    _wire(m_cfg, cmd, L("Providers personnels…", "Personal providers…"),
           "open_personal_provider_window")
-    _wire(m_cfg, window, L("Zoom level par zone…", "Per-zone zoom level…"),
+    _wire(m_cfg, cmd, L("Zoom level par zone…", "Per-zone zoom level…"),
           "open_custom_zl_window")
     menubar.add_cascade(label=L("Configuration", "Configuration"), menu=m_cfg)
 
     # ── Outils ────────────────────────────────────────────────────────
     m_tools = tk.Menu(menubar, tearoff=0, **mkw)
-    _wire(m_tools, window, L("Altimétrie / DEM / QGIS…", "Altimetry / DEM / QGIS…"),
+    _wire(m_tools, cmd, L("Altimétrie / DEM / QGIS…", "Altimetry / DEM / QGIS…"),
           "open_altimetrie_module")
-    _wire(m_tools, window, L("Bathymétrie / QGIS…", "Bathymetry / QGIS…"),
+    _wire(m_tools, cmd, L("Bathymétrie / QGIS…", "Bathymetry / QGIS…"),
           "open_bathymetrie_module")
-    _wire(m_tools, window, L("Créer / modifier un provider (.lay)…",
+    _wire(m_tools, cmd, L("Créer / modifier un provider (.lay)…",
                              "Create / edit a provider (.lay)…"),
           "open_lay_generator_module")
-    _wire(m_tools, window, L("Cache OSM local (.pbf)…", "Local OSM cache (.pbf)…"),
+    _wire(m_tools, cmd, L("Cache OSM local (.pbf)…", "Local OSM cache (.pbf)…"),
           "open_pbf_module")
-    _wire(m_tools, window, L("Analyse des fournisseurs…", "Provider analysis…"),
+    _wire(m_tools, cmd, L("Analyse des fournisseurs…", "Provider analysis…"),
           "open_provider_score_module")
     m_tools.add_separator()
     m_tools.add_command(
         label=L("JOSM / Extents (masques, zones)", "JOSM / Extents (masks, zones)"),
-        command=lambda: _open_module(window, "O4_Avance_Utils", "open_avance_window"))
+        command=lambda: (before and _safe_call(before),
+                         _open_module(window, "O4_Avance_Utils",
+                                      "open_avance_window")))
     # Générer un .comb : sous-menu à deux modes (remplace la fenêtre de choix)
     m_comb = tk.Menu(m_tools, tearoff=0, **mkw)
     m_comb.add_command(
@@ -330,34 +369,48 @@ def install_menubar(window):
     m_tools.add_command(
         label=L("🗃  Bibliothèque de tuiles", "🗃  Tile library"),
         command=lambda: _open_module(window, "O4_Tile_Library_Utils", "run_tile_library"))
+    # Modules autonomes Grand public (novembre 2026) : même ouverture que la
+    # Bibliothèque (_open_module : si le module manque, rien ne se passe).
+    m_tools.add_command(
+        label=L("🧭  Mode simple (carte, débutant)…", "🧭  Simple mode (map, beginner)…"),
+        command=lambda: _open_module(window, "O4_Grand_Public_Utils", "run_grand_public"))
+    m_tools.add_command(
+        label=L("🩺  Diagnostic…", "🩺  Diagnostic…"),
+        command=lambda: _open_module(window, "O4_Diagnostics_Utils", "run_diagnostics"))
+    m_tools.add_command(
+        label=L("🧹  Grand nettoyage (libérer de la place)…", "🧹  Big cleanup (free up space)…"),
+        command=lambda: _open_module(window, "O4_Cleanup_Utils", "run_cleanup"))
+    m_tools.add_command(
+        label=L("☁  Nuages sur les images…", "☁  Clouds on the images…"),
+        command=lambda: _open_module(window, "O4_Cloud_Utils", "run_cloud_window"))
     m_tools.add_separator()
-    _wire(m_tools, window,
+    _wire(m_tools, cmd,
           L("Corrections R.G.B., Netteté, saturation…",
             "R.G.B., Sharpness, Saturation corrections…"),
           "open_color_check")
-    _wire(m_tools, window, L("Correction imagerie / zone…", "Imagery / zone correction…"),
+    _wire(m_tools, cmd, L("Correction imagerie / zone…", "Imagery / zone correction…"),
           "open_correction_module")
     m_tools.add_separator()
-    _wire(m_tools, window, L("Vue Terre…", "Earth view…"),
+    _wire(m_tools, cmd, L("Vue Terre…", "Earth view…"),
           "open_earth_window")
-    _wire(m_tools, window, L("Visualiseur de configuration…", "Configuration visualizer…"),
+    _wire(m_tools, cmd, L("Visualiseur de configuration…", "Configuration visualizer…"),
           "open_simulator_window")
     menubar.add_cascade(label=L("Outils", "Tools"), menu=m_tools)
 
     # ── Fabrication ───────────────────────────────────────────────────
     m_build = tk.Menu(menubar, tearoff=0, **mkw)
-    _wire(m_build, window, L("1 · Données vectorielles", "1 · Assemble Vector data"),
+    _wire(m_build, cmd, L("1 · Données vectorielles", "1 · Assemble Vector data"),
           "build_poly_file")
-    _wire(m_build, window, L("2 · Maillage 3D", "2 · Triangulate 3D Mesh"),
+    _wire(m_build, cmd, L("2 · Maillage 3D", "2 · Triangulate 3D Mesh"),
           "build_mesh")
-    _wire(m_build, window, L("2.1 · Patchs de mer", "2.1 · Sea Patches"),
+    _wire(m_build, cmd, L("2.1 · Patchs de mer", "2.1 · Sea Patches"),
           "build_sea_patches")
-    _wire(m_build, window, L("2.5 · Masques d'eau", "2.5 · Draw Water Masks"),
+    _wire(m_build, cmd, L("2.5 · Masques d'eau", "2.5 · Draw Water Masks"),
           "build_masks")
-    _wire(m_build, window, L("3 · Imagerie / DSF", "3 · Build Imagery / DSF"),
+    _wire(m_build, cmd, L("3 · Imagerie / DSF", "3 · Build Imagery / DSF"),
           "build_tile")
     m_build.add_separator()
-    _wire(m_build, window, L("Tout en un", "All in one"),
+    _wire(m_build, cmd, L("Tout en un", "All in one"),
           "build_all")
     menubar.add_cascade(label=L("Fabrication", "Build"), menu=m_build)
 
@@ -365,13 +418,16 @@ def install_menubar(window):
     m_help = tk.Menu(menubar, tearoff=0, **mkw)
     _add_tutos_submenu(m_help, window, mkw)
     m_help.add_separator()
+    m_help.add_command(
+        label=L("🆕  Vérifier les mises à jour…", "🆕  Check for updates…"),
+        command=lambda: _open_module(window, "O4_Update_Utils", "check_now_dialog"))
     m_help.add_command(label=L("À propos d'Ortho4XP…", "About Ortho4XP…"),
-                       command=lambda: _about(window))
+                       command=lambda: _about(host))
     menubar.add_cascade(label=L("Aide", "Help"), menu=m_help)
 
     # ── Attache + conserve une référence (anti-ramasse-miettes) ────────
-    window.config(menu=menubar)
-    window._menubar = menubar
+    host.config(menu=menubar)
+    host._menubar = menubar
     return menubar
 
 

@@ -1639,7 +1639,7 @@ def open_altimetrie_window(gui):
     except Exception:
         pass
     win = tk.Toplevel(root_ref) if root_ref else tk.Toplevel(gui)
-    win.title(_tr("Altimétrie / DEM — Ortho4XP V3"))
+    win.title(_tr("Altimétrie / DEM — Ortho4XP V4"))
     win.configure(bg=BG)
     # Rattachée au GUI : elle ne se perd jamais derrière la fenêtre
     # principale après une boîte de dialogue.

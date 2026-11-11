@@ -194,7 +194,7 @@ def _open_correction_window(parent_win, patch_dir, existing_files,
         pass
 
     corr = tk.Toplevel(root_ref) if root_ref else tk.Toplevel(parent_win)
-    corr.title(_tr("Correction patches — Ortho4XP V3"))
+    corr.title(_tr("Correction patches — Ortho4XP V4"))
     corr.configure(bg=BG)
     corr.resizable(True, True)
     corr.lift()
@@ -540,7 +540,7 @@ def _open_correction_window(parent_win, patch_dir, existing_files,
         # AUCUN fichier du pipeline n'est modifié ; lecture seule des DDS.
         # (Zoom et réglages fins d'affichage : étape 2b2.)
         viz = tk.Toplevel(corr)
-        viz.title(_tr("Visualiser la tuile — Ortho4XP V3"))
+        viz.title(_tr("Visualiser la tuile — Ortho4XP V4"))
         viz.configure(bg=BG)
         viz.transient(corr)
         viz.lift()

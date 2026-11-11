@@ -231,9 +231,27 @@ _CATALOGUE = [
      ("Source d'imagerie sans donnée à cet endroit, ou serveur saturé.",
       "Imagery source without data there, or overloaded server."),
      ("Regardez la tuile avec « Visualiser la tuile » ; si c'est un défaut, "
-      "cochez l'image « à corriger » ou essayez une autre source.",
-      "Look at the tile with « View tile »; if it is a defect, tick the image "
-      "« to correct » or try another source.")),
+      "cliquez « 🔧 Réparer les images blanches » ci-dessous (ces images "
+      "seules sont retéléchargées) ou essayez une autre source.",
+      "Look at the tile with « View tile »; if it is a defect, click "
+      "« 🔧 Repair white images » below (only these images are downloaded "
+      "again) or try another source.")),
+
+    ("missing_part",
+     r"could not be obtained",
+     "orange",
+     ("Une partie d'image n'a pas pu être téléchargée (remplie de blanc).",
+      "Part of an image could not be downloaded (filled with white)."),
+     ("Même en baissant le niveau de zoom, le serveur n'a pas fourni ce "
+      "morceau : il apparaîtra blanc dans X-Plane.",
+      "Even at a lower zoom level the server did not send this piece: it "
+      "will look white in X-Plane."),
+     ("Coupure réseau, serveur saturé ou limite de téléchargement atteinte.",
+      "Network cut, overloaded server or download limit reached."),
+     ("Attendez un peu puis cliquez « 🔧 Réparer les images blanches » "
+      "ci-dessous : seules ces images sont retéléchargées.",
+      "Wait a little, then click « 🔧 Repair white images » below: only "
+      "these images are downloaded again.")),
 
     ("xplane_root",
      r"ce dossier est la racine X-Plane|This is the X-Plane root folder",
@@ -911,8 +929,8 @@ def tools_findings(root=None):
                "Without them, Ortho4XP cannot make the terrain or textures."),
             _L("Installation incomplète ou antivirus qui les a retirés.",
                "Incomplete installation or antivirus removed them."),
-            _L("Réinstallez Ortho4XP V3 depuis la page GitHub.",
-               "Reinstall Ortho4XP V3 from the GitHub page."),
+            _L("Réinstallez Ortho4XP V4 depuis la page GitHub.",
+               "Reinstall Ortho4XP V4 from the GitHub page."),
             raw=[os.path.join(d, m) for m in missing], fid="tools"))
     earth = os.path.join(root, "Utils", "Earth")
     try:
@@ -1083,8 +1101,10 @@ def scenery_findings(text, exists_fn=None):
             _L("Ancienne et nouvelle version de la tuile toutes deux "
                "installées.",
                "Old and new versions of the tile both installed."),
-            _L("Gardez une seule version (Bibliothèque de tuiles → Retirer).",
-               "Keep one version only (Tile library → Remove)."),
+            _L("Cliquez « 🔧 Désactiver les doublons » ci-dessous (la "
+               "première reste active), ou Bibliothèque de tuiles → Retirer.",
+               "Click « 🔧 Disable duplicates » below (the first one stays "
+               "active), or Tile library → Remove."),
             count=len(dups), raw=raw, fid="dup_tiles"))
 
     # 2) ortho au-dessus d'un overlay / aéroports / SimHeaven
@@ -1110,11 +1130,12 @@ def scenery_findings(text, exists_fn=None):
                    "hidden by the photo."),
                 _L("Ordre du fichier scenery_packs.ini.",
                    "Order of the scenery_packs.ini file."),
-                _L("Dans scenery_packs.ini, les tuiles zOrtho4XP doivent être "
-                   "tout en bas, sous les overlays, SimHeaven et Global "
-                   "Airports.",
-                   "In scenery_packs.ini, zOrtho4XP tiles must be at the very "
-                   "bottom, below overlays, SimHeaven and Global Airports."),
+                _L("Les tuiles zOrtho4XP doivent être sous les overlays, "
+                   "SimHeaven et Global Airports : cliquez « 🔧 Remettre "
+                   "l'ordre des scènes » ci-dessous (X-Plane fermé).",
+                   "zOrtho4XP tiles must be below overlays, SimHeaven and "
+                   "Global Airports: click « 🔧 Fix scenery order » below "
+                   "(X-Plane closed)."),
                 count=len(below),
                 raw=[first_ortho["path"]] + [p["path"] for p in below[:5]],
                 fid="order"))
@@ -1394,7 +1415,7 @@ def format_text(findings, with_raw=True):
                 "machine": _L("Machine", "Machine"),
                 "scenes": _L("Scènes X-Plane", "X-Plane sceneries"),
                 "xplane": "X-Plane"}
-    lines = [_L("DIAGNOSTIC ORTHO4XP V3", "ORTHO4XP V3 DIAGNOSTIC"),
+    lines = [_L("DIAGNOSTIC ORTHO4XP V4", "ORTHO4XP V4 DIAGNOSTIC"),
              time.strftime("%Y-%m-%d %H:%M:%S"), ""]
     for f in findings:
         head = "%s [%s] %s" % (SEV_ICON.get(f["sev"], "-"),
@@ -1511,7 +1532,7 @@ def run_diagnostics(parent=None):
         except Exception:
             root_ref = None
     win = tk.Toplevel(root_ref) if root_ref else tk.Tk()
-    win.title(_L("Diagnostic — Ortho4XP V3", "Diagnostic — Ortho4XP V3"))
+    win.title(_L("Diagnostic — Ortho4XP V4", "Diagnostic — Ortho4XP V4"))
     win.configure(bg=BG)
     if _TM is not None:
         try:
@@ -1662,6 +1683,214 @@ def run_diagnostics(parent=None):
         if os.path.isfile(p):
             _open_path(p)
 
+    # --- réparations (avec confirmation) ---
+    def _busy():
+        try:
+            import O4_UI_Utils as _UI
+            if _UI.is_working or state.get("repair_running"):
+                messagebox.showwarning(
+                    _L("Construction en cours", "Build running"),
+                    _L("Une construction est en cours : attendez la fin.",
+                       "A build is running: wait until it ends."),
+                    parent=win)
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _repair_white():
+        if _busy():
+            return
+        try:
+            import O4_Image_Repair_Utils as IR
+            import O4_File_Names as _FN
+        except Exception as e:
+            messagebox.showerror(_L("Réparation", "Repair"), str(e),
+                                 parent=win)
+            return
+        names = IR.white_images_from_log(sessions=sess_var.get())
+        wdirs = [_FN.Tile_dir]
+        try:
+            import O4_UI_Utils as _UI
+            cbd = _UI.gui.custom_build_dir.get() if _UI.gui else ""
+            if cbd:
+                wdirs.append(cbd.rstrip("/\\") if cbd[-1] in "/\\"
+                             else os.path.dirname(cbd))
+        except Exception:
+            pass
+        items = IR.locate(names, _FN.Imagery_dir, wdirs) if names else []
+        todo = IR.tiles_to_rebuild(items)
+        if not items or not todo:
+            messagebox.showinfo(
+                _L("Réparer les images blanches", "Repair white images"),
+                _L("Aucune image blanche à réparer dans la période analysée "
+                   "(ou ses fichiers ne sont plus sur le disque).",
+                   "No white image to repair in the analysed period (or its "
+                   "files are no longer on disk)."), parent=win)
+            return
+        shown = "\n".join("• " + it["name"] for it in items[:12])
+        if len(items) > 12:
+            shown += "\n• … (+%d)" % (len(items) - 12)
+        tiles_txt = ", ".join(sorted({"%+03d%+04d" % t for (t, _) in todo}))
+        if not messagebox.askyesno(
+                _L("Réparer les images blanches", "Repair white images"),
+                _L("Images signalées dans le journal :\n",
+                   "Images reported in the log:\n") + shown + "\n\n"
+                + _L("Ces images et leurs textures seront effacées puis "
+                     "retéléchargées, et l'étape 3 relancée pour : ",
+                     "These images and their textures will be deleted, then "
+                     "downloaded again, and step 3 run again for: ")
+                + tiles_txt + "\n\n"
+                + _L("Attention : une zone de neige ou de marais salants peut "
+                     "être signalée à tort.\nContinuer ?",
+                     "Note: snow or salt flats can be reported by mistake.\n"
+                     "Continue?"), parent=win):
+            return
+        IR.delete_files(items)
+        st = {}
+        state["repair_running"] = True
+
+        def _work():
+            try:
+                IR.rebuild_tiles(todo, st)
+            except Exception:
+                st.setdefault("failed", []).append("?")
+            finally:
+                state["repair_running"] = False
+
+        import threading as _th
+        _th.Thread(target=_work, daemon=True).start()
+
+        def _poll():
+            if state.get("repair_running"):
+                summary.config(text="🔧 " + _L("Réparation en cours : ",
+                                              "Repair running: ")
+                               + str(st.get("current", "")))
+                win.after(1000, _poll)
+                return
+            ok, ko = st.get("ok", []), st.get("failed", [])
+            msg = ""
+            if ok:
+                msg += _L("Réparée(s) : ", "Repaired: ") + ", ".join(ok)
+            if ko:
+                msg += ("\n" if msg else "") + _L(
+                    "Échec (voir la fenêtre principale) : ",
+                    "Failed (see the main window): ") + ", ".join(ko)
+            (messagebox.showinfo if not ko else messagebox.showwarning)(
+                _L("Réparer les images blanches", "Repair white images"),
+                msg or _L("Terminé.", "Done."), parent=win)
+            _refresh()
+
+        try:
+            win.after(1000, _poll)
+        except Exception:
+            pass
+
+    def _xplane_open():
+        try:
+            import O4_Scenery_Installer_Utils as _SI
+            if _SI.xplane_running() is True:
+                messagebox.showwarning("X-Plane", _SI.xplane_open_message(),
+                                       parent=win)
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _ini_or_warn():
+        if _xplane_open():
+            return ""
+        ini = _guess_ini()
+        if not ini or not os.path.isfile(ini):
+            messagebox.showwarning(
+                "scenery_packs.ini",
+                _L("Fichier scenery_packs.ini de X-Plane introuvable : "
+                   "indiquez-le une fois dans la Bibliothèque de tuiles.",
+                   "X-Plane scenery_packs.ini not found: set it once in the "
+                   "Tile library."), parent=win)
+            return ""
+        return ini
+
+    def _fix_order():
+        try:
+            import O4_Scenery_Installer_Utils as SI
+        except Exception as e:
+            messagebox.showerror(_L("Ordre des scènes", "Scenery order"),
+                                 str(e), parent=win)
+            return
+        ini = _ini_or_warn()
+        if not ini:
+            return
+        with open(ini, "r", encoding="utf-8", errors="replace") as f:
+            n = SI.fix_order(f.read())[1]
+        if not n:
+            messagebox.showinfo(_L("Ordre des scènes", "Scenery order"),
+                                _L("L'ordre des scènes est déjà bon.",
+                                   "The scenery order is already right."),
+                                parent=win)
+            return
+        if not messagebox.askyesno(
+                _L("Ordre des scènes", "Scenery order"),
+                SI.close_xplane_warning() + "\n\n"
+                + _L("%d tuile(s) photo seront redescendues sous les "
+                     "overlays et Global Airports.\nUne copie .bak est "
+                     "faite.\nContinuer ?",
+                     "%d photo tile(s) will be moved below the overlays and "
+                     "Global Airports.\nA .bak copy is made.\nContinue?")
+                % n, parent=win):
+            return
+        ok, n2 = SI.fix_order_in_file(ini)
+        messagebox.showinfo(_L("Ordre des scènes", "Scenery order"),
+                            _L("Ordre corrigé (%d ligne(s)).",
+                               "Order fixed (%d line(s)).") % n2, parent=win)
+        _refresh()
+
+    def _fix_dups():
+        try:
+            import O4_Scenery_Installer_Utils as SI
+        except Exception as e:
+            messagebox.showerror(_L("Doublons", "Duplicates"), str(e),
+                                 parent=win)
+            return
+        ini = _ini_or_warn()
+        if not ini:
+            return
+        with open(ini, "r", encoding="utf-8", errors="replace") as f:
+            changed = SI.disable_duplicates(f.read())[1]
+        if not changed:
+            messagebox.showinfo(_L("Doublons", "Duplicates"),
+                                _L("Aucune tuile en double.",
+                                   "No duplicate tile."), parent=win)
+            return
+        shown = "\n".join("• " + c for c in changed[:12])
+        if len(changed) > 12:
+            shown += "\n• … (+%d)" % (len(changed) - 12)
+        if not messagebox.askyesno(
+                _L("Doublons", "Duplicates"),
+                SI.close_xplane_warning() + "\n\n"
+                + _L("Ces lignes seront désactivées (la première de chaque "
+                     "tuile reste active, rien n'est effacé, copie .bak) :\n",
+                     "These lines will be disabled (the first one of each "
+                     "tile stays active, nothing is deleted, .bak copy):\n")
+                + shown + "\n\n" + _L("Continuer ?", "Continue?"),
+                parent=win):
+            return
+        SI.disable_duplicates_in_file(ini)
+        messagebox.showinfo(_L("Doublons", "Duplicates"),
+                            _L("%d doublon(s) désactivé(s).",
+                               "%d duplicate(s) disabled.") % len(changed),
+                            parent=win)
+        _refresh()
+
+    fix = tk.Frame(win, bg=BG)
+    fix.pack(fill=tk.X, padx=12, pady=(4, 0))
+    _btn(fix, _L("🔧 Réparer les images blanches", "🔧 Repair white images"),
+         _repair_white).pack(side=tk.LEFT, padx=(0, 6))
+    _btn(fix, _L("🔧 Remettre l'ordre des scènes", "🔧 Fix scenery order"),
+         _fix_order).pack(side=tk.LEFT, padx=6)
+    _btn(fix, _L("🔧 Désactiver les doublons", "🔧 Disable duplicates"),
+         _fix_dups).pack(side=tk.LEFT, padx=6)
+
     # --- bas : boutons ---
     bot = tk.Frame(win, bg=BG)
     bot.pack(fill=tk.X, padx=12, pady=(4, 12))
@@ -1680,7 +1909,7 @@ def run_diagnostics(parent=None):
     # Taille plafonnée à l'écran réel (règle Bible)
     try:
         w = min(900, int(win.winfo_screenwidth() * 0.95))
-        h = min(700, int(win.winfo_screenheight() * 0.90))
+        h = min(740, int(win.winfo_screenheight() * 0.90))
         win.geometry("%dx%d" % (w, h))
         win.minsize(min(520, w), min(380, h))
     except Exception:

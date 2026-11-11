@@ -348,7 +348,7 @@ T = {
 
     # ── CORRECTION IMAGERIE/ZONE — bouton & fenêtre ───────────────
     "Visualiser la tuile"                    : "Visualiser la tuile",
-    "Visualiser la tuile — Ortho4XP V3"      : "Visualiser la tuile — Ortho4XP V3",
+    "Visualiser la tuile — Ortho4XP V4"      : "Visualiser la tuile — Ortho4XP V4",
     "Mosaïque des DDS de la tuile — à venir" : "Mosaïque des DDS de la tuile — à venir",
     "Dossier textures introuvable pour cette tuile." : "Dossier textures introuvable pour cette tuile.",
     "Aucun DDS dans le dossier textures de la tuile." : "Aucun DDS dans le dossier textures de la tuile.",
@@ -381,10 +381,10 @@ T = {
                                             : "Correction imagerie et traitement de zone",
 
     # ── GESTION JPG-PATCH — textes fenêtre ────────────────────────
-    "Gestion JPG-Patch — Ortho4XP V3"       : "Gestion JPG-Patch — Ortho4XP V3",
+    "Gestion JPG-Patch — Ortho4XP V4"       : "Gestion JPG-Patch — Ortho4XP V4",
     "Gestion des JPG-Patch existants"        : "Gestion des JPG-Patch existants",
     "patch(es) trouvé(s) dans"              : "patch(es) trouvé(s) dans",
-    "Sélection patches à conserver — Ortho4XP V3" : "Sélection patches à conserver — Ortho4XP V3",
+    "Sélection patches à conserver — Ortho4XP V4" : "Sélection patches à conserver — Ortho4XP V4",
     "Cocher les patches à CONSERVER"         : "Cocher les patches à CONSERVER",
     "(Les patches non cochés seront supprimés)" : "(Les patches non cochés seront supprimés)",
     "Tout cocher"   : "Tout cocher",
@@ -397,7 +397,7 @@ T = {
 
     # ── PROVIDERS PERSONNELS ───────────────────────────────────────
     "Personnel"                             : "Personnel",
-    "personal_provider_window_title"        : "Providers Personnels — Ortho4XP V3",
+    "personal_provider_window_title"        : "Providers Personnels — Ortho4XP V4",
     "personal_provider_list_label"          : "Mes providers :",
     "personal_provider_name_label"          : "Nom du provider (code) :",
     "personal_provider_url_label"           : "URL des jpg (TMS) :",
@@ -517,8 +517,8 @@ T = {
         : '⛰ Altimétrie / DEM',
     'Altimétrie / DEM'
         : 'Altimétrie / DEM',
-    'Altimétrie / DEM — Ortho4XP V3'
-        : 'Altimétrie / DEM — Ortho4XP V3',
+    'Altimétrie / DEM — Ortho4XP V4'
+        : 'Altimétrie / DEM — Ortho4XP V4',
     'Le module O4_Altimetrie_Utils.py est introuvable dans le dossier src/.'
         : 'Le module O4_Altimetrie_Utils.py est introuvable dans le dossier src/.',
     'Latitude / longitude invalides.'
@@ -1042,8 +1042,8 @@ T = {
         : 'Correction imagerie/zone',
     'Correction patches'
         : 'Correction patches',
-    'Correction patches — Ortho4XP V3'
-        : 'Correction patches — Ortho4XP V3',
+    'Correction patches — Ortho4XP V4'
+        : 'Correction patches — Ortho4XP V4',
     'Erreur'
         : 'Erreur',
     'Erreur ouverture'
@@ -1298,8 +1298,8 @@ T = {
         : 'Bathymétrie',
     'Le module O4_Bathymetrie_Utils.py est introuvable dans le dossier src/.'
         : 'Le module O4_Bathymetrie_Utils.py est introuvable dans le dossier src/.',
-    'Bathymétrie — Ortho4XP V3'
-        : 'Bathymétrie — Ortho4XP V3',
+    'Bathymétrie — Ortho4XP V4'
+        : 'Bathymétrie — Ortho4XP V4',
     "Assemblage terminé.\n\n{f}\n\ncustom_bathy_dem est renseigné : la tuile est prête pour l'étape mesh."
         : "Assemblage terminé.\n\n{f}\n\ncustom_bathy_dem est renseigné : la tuile est prête pour l'étape mesh.",
     "Aucun dossier de bathymétries n'est configuré."
