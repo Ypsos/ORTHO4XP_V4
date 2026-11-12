@@ -508,11 +508,47 @@ class ColorCheckWindow(tk.Toplevel):
             _TM.apply_to_root(self)
         except Exception:
             pass
+        self._theme_fill_gaps()
 
         # Taille mini : empêche de masquer boutons / panneaux en réduisant la fenêtre
         self._lock_minsize()
         # Re-verrouille après affichage réel (layout Mac/DPI parfois incomplet au 1er calcul)
         self.after(150, self._lock_minsize)
+
+    def _theme_fill_gaps(self):
+        """Complète le thème là où apply_to_root ne passe pas (sans toucher
+        à O4_Theme_Manager) : les cadres titrés (classe Tk « Labelframe »,
+        non reconnue par apply_to_root) et le fond des libellés de couleur
+        protégés (R corr, G corr…) prennent le fond du thème. Les couleurs
+        de texte (rouge / vert / bleu / jaune) sont gardées."""
+        try:
+            import O4_Theme_Manager as _TM
+            bg = _TM.get_theme().get("bg")
+        except Exception:
+            return
+        if not bg:
+            return
+
+        def _walk(w):
+            try:
+                cls = w.winfo_class()
+            except Exception:
+                cls = ""
+            try:
+                if cls == "Labelframe":
+                    w.configure(bg=bg)
+                elif cls == "Label" and getattr(w, "_color_protected", False):
+                    w.configure(bg=bg)
+            except Exception:
+                pass
+            try:
+                kids = w.winfo_children()
+            except Exception:
+                kids = []
+            for k in kids:
+                _walk(k)
+
+        _walk(self)
 
     def _lock_minsize(self):
         """Bloque la réduction de la fenêtre sous la taille nécessaire aux boutons."""
@@ -965,7 +1001,11 @@ class ColorCheckWindow(tk.Toplevel):
         hdr.columnconfigure(0, weight=1)
         hdr.columnconfigure(1, weight=1)
         hdr.columnconfigure(2, weight=1)
-        for col, txt in enumerate(["Image Source", "Correction", "Couleur Cible"]):
+        # « Couleur Cible » traduit via le libellé déjà traduit du panneau
+        # droit (aucun fichier de langue touché).
+        _cible = tr("Couleur Cible — extends / ZL").split(" — ")[0].strip() \
+            or "Couleur Cible"
+        for col, txt in enumerate(["Image Source", "Correction", _cible]):
             tk.Label(hdr, text=txt, bg="#3b5b49", fg="white",
                      font=("TkFixedFont", fs(11), "bold"),
                      anchor="center").grid(row=0, column=col, sticky="ew")
