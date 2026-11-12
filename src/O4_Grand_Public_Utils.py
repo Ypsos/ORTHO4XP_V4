@@ -547,6 +547,75 @@ def scan_built_tiles(working_dir, long_latlon=None):
     return out
 
 
+def built_tiles_map(dirs, long_latlon=None):
+    """Tuiles déjà construites dans PLUSIEURS dossiers (même règle que
+    scan_built_tiles) -> {(lat, lon): dossier de la tuile}. Le premier
+    dossier de la liste qui contient la tuile est gardé. Lecture seule."""
+    out = {}
+    for wd in dirs:
+        if not wd:
+            continue
+        try:
+            names = sorted(os.listdir(wd))
+        except Exception:
+            continue
+        for name in names:
+            m = _DIR_RE.search(name)
+            if not m:
+                continue
+            lat, lon = int(m.group(1)), int(m.group(2))
+            if (lat, lon) in out:
+                continue
+            if long_latlon is None:
+                dsf_name = "%+03d%+04d.dsf" % (lat, lon)
+            else:
+                dsf_name = long_latlon(lat, lon) + ".dsf"
+            try:
+                ok = os.path.isfile(os.path.join(wd, name, "Earth nav data",
+                                                 dsf_name))
+            except Exception:
+                ok = False
+            if ok:
+                out[(lat, lon)] = os.path.join(wd, name)
+    return out
+
+
+def built_scan_dirs(cbd):
+    """Dossiers où chercher les tuiles déjà construites, dans l'ordre :
+    dossier de construction choisi (s'il n'est pas groupé), dossier Tiles
+    d'Ortho4XP, puis « Custom Scenery » du X-Plane choisi. Sans doublon."""
+    dirs = []
+    try:
+        if not is_grouped(cbd):
+            dirs.append(working_dir(cbd))
+    except Exception:
+        pass
+    try:
+        import O4_File_Names as FNAMES
+        dirs.append(FNAMES.Tile_dir)
+    except Exception:
+        dirs.append(os.path.join(_root_dir(), "Tiles"))
+    try:
+        root = xplane_root_of_ini(xplane_ini())
+        if root:
+            dirs.append(os.path.join(root, "Custom Scenery"))
+    except Exception:
+        pass
+    out, seen = [], set()
+    for d in dirs:
+        if not d:
+            continue
+        try:
+            k = os.path.normcase(os.path.realpath(d))
+        except Exception:
+            k = d
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(d)
+    return out
+
+
 def needed_mesh_zl(current_mesh_zl, quality_vals, zone_list):
     """PUR. ZL le plus haut réellement utilisé -> mesh_zl minimal (même règle
     que la fenêtre des zones ZL, §31)."""
@@ -1974,7 +2043,7 @@ def run_grand_public(parent=None):
     cbd = current_build_dir()
     st = {
         "sel": set(),
-        "done": set(),
+        "done": set(), "done_dirs": {},
         "rects": {},          # (lat,lon) -> id rectangle sélection
         "done_rects": {},
         "chunks": {},         # (nx,ny) -> (id_image, PhotoImage)
@@ -2705,14 +2774,16 @@ def run_grand_public(parent=None):
         for ids in st["done_rects"].values():
             _delete_ids(ids)
         st["done_rects"] = {}
-        if is_grouped(cbd):
-            return
         try:
             import O4_File_Names as FNAMES
             ll = FNAMES.long_latlon
         except Exception:
             ll = None
-        st["done"] = scan_built_tiles(working_dir(cbd), ll)
+        # Vert = tuile trouvée dans le dossier de construction, dans Tiles
+        # OU déjà dans le Custom Scenery du X-Plane choisi (quelle que soit
+        # la langue et même si le champ « dossier de construction » change).
+        st["done_dirs"] = built_tiles_map(built_scan_dirs(cbd), ll)
+        st["done"] = set(st["done_dirs"])
         for (lat, lon) in st["done"]:
             st["done_rects"][(lat, lon)] = _outlined_rect(lat, lon, COL_DONE, 2)
         # les tuiles choisies restent au-dessus
@@ -3917,7 +3988,13 @@ def run_grand_public(parent=None):
             return
         try:
             import O4_Config_Utils as CFG
-            dirs = [CFG.Tile(t[0], t[1], cbd).build_dir for t in tiles]
+            found = st.get("done_dirs") or {}
+            dirs = []
+            for t in tiles:
+                bd = CFG.Tile(t[0], t[1], cbd).build_dir
+                if not os.path.isdir(bd) and found.get(t):
+                    bd = found[t]
+                dirs.append(bd)
         except Exception as e:
             messagebox.showerror(_L("Installer", "Install"), str(e),
                                  parent=win)
