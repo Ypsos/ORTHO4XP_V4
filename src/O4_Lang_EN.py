@@ -1,4 +1,23 @@
 # ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CRÉDIT — AUTEUR : Roland (Ypsos) — Mai 2026
+# Module conçu et spécifié par Roland (Ypsos) pour Ortho4XP V3.
+# Cette notice d'auteur et de copyright doit être conservée
+# conformément à la GPLv3.
+# Licence : GPLv3 + conditions additionnelles (art. 7),
+# voir AVERTISSEMENT_LICENCE_LEGAL.md, section 16.
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CREDIT — AUTHOR: Roland (Ypsos) — May 2026
+# Module designed and specified by Roland (Ypsos) for Ortho4XP V3.
+# This authorship and copyright notice must be retained
+# in accordance with GPLv3.
+# License: GPLv3 + additional terms (Sec. 7),
+# see AVERTISSEMENT_LICENCE_LEGAL.md, Section 16.
+# ============================================================
+# ============================================================
 #  O4_Lang_EN.py  —  ORTHO4XP V2  —  Language file : ENGLISH
 #  All interface strings in English.
 #  French additions have been translated to English.

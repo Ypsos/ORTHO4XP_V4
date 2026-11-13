@@ -3,11 +3,15 @@
 # Ce module a été conçu et spécifié par Roland (Ypsos) pour Ortho4XP V3.
 # Cette mention de paternité NE DOIT JAMAIS ÊTRE SUPPRIMÉE,
 # quelle que soit l'évolution ultérieure du fichier.
+# Licence : GPLv3 + conditions additionnelles (art. 7),
+# voir AVERTISSEMENT_LICENCE_LEGAL.md, section 16.
 #============================================================
 # CREDIT — AUTHOR: Roland (Ypsos). — 2026
 # This module was designed and specified by Roland (Ypsos) for Ortho4XP V3.
 # This authorship notice MUST NEVER BE REMOVED,
 # regardless of any subsequent evolution of the file.
+# License: GPLv3 + additional terms (Sec. 7),
+# see AVERTISSEMENT_LICENCE_LEGAL.md, Section 16.
 #============================================================
 # CONTRIBUTEURS / CONTRIBUTORS :
 #   - Preset IGN Ortho France (WMTS, France + DOM-TOM) :

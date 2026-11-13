@@ -1,4 +1,4 @@
-# ⚠ AVERTISSEMENT LÉGAL — ORTHO4XP (V2, V3 et versions ultérieures) — Officiel
+# ⚠ AVERTISSEMENT LÉGAL — ORTHO4XP (V2, V3, V4 et versions ultérieures) — Officiel
 
 **IMPORTANT :**
 La version **FRANÇAISE** ci-dessous constitue la version de référence du présent document.
@@ -14,7 +14,7 @@ The English translation is provided for informational purposes only.
 
 Ortho4XP (versions V2, V3 et versions ultérieures) constitue une évolution et une œuvre dérivée d'Ortho4XP, créé par **Oscar Pilote**, et distribué sous **GNU General Public License version 3 (GPL v3)**.
 
-La présente notice complète les informations relatives au projet et à ses développements. Elle ne remplace pas et ne modifie pas la GPL v3 applicable au code auquel cette licence s'applique.
+La présente notice complète les informations relatives au projet et à ses développements. Elle ne remplace pas et ne modifie pas la GPL v3 applicable au code auquel cette licence s'applique, à l'exception des **conditions additionnelles de la section 16**, autorisées par l'article 7 de la GPL v3.
 
 En cas de contradiction entre la présente notice et les dispositions impératives de la GPL v3, **la GPL v3 prévaut**.
 
@@ -26,12 +26,12 @@ Le code couvert par la GPL v3 peut être librement étudié, modifié et redistr
 
 ## 1. DESCRIPTION, HISTORIQUE ET CRÉDITS
 
-Ortho4XP V2, V3 et versions ultérieures constituent une évolution continue développée à partir de la version **Ortho4XP 1.40 (Shred)**, elle-même issue d'Ortho4XP d'origine créé par **Oscar Pilote**.
+Ortho4XP V2, V3 et versions ultérieures constituent une évolution continue développée à partir de la version **Ortho4XP 1.40 (Shred86)**, elle-même issue d'Ortho4XP d'origine créé par **Oscar Pilote**.
 
 ### Contributions et chaîne d'évolution
 
 * **Oscar Pilote** — créateur d'Ortho4XP — © 2014–2018
-* **Shred** — version Ortho4XP 1.40 et contribution intermédiaire
+* **Shred86** — version Ortho4XP 1.40 et contribution intermédiaire
 * **Roland (Ypsos)** — conception, réalisation, ergonomie, évolution et développement des versions V2, V3 et ultérieures — © 2024–2026 et versions ultérieures
 
 **Idée originale, conception, réalisation, ergonomie, évolution et développement des versions V2, V3 et ultérieures : Roland (Ypsos).**
@@ -277,6 +277,70 @@ Les éventuels projets dérivés sont indépendants de la version officielle et 
 
 ---
 
+## 15. CRÉATIONS ET DÉVELOPPEMENTS ORIGINAUX DE ROLAND (YPSOS)
+
+Les éléments ci-dessous ont été imaginés, conçus et réalisés par **Roland (Ypsos)** pour Ortho4XP V2, V3, V4 et versions ultérieures. Ils n'existaient pas dans Ortho4XP d'Oscar Pilote ni dans la version 1.40 de Shred86.
+
+### Architecture
+* **Event Bus**, **Pipeline** de construction et **Memory Manager** (surveillance de la mémoire en temps réel et nettoyage automatique du cache)
+* **Sentinelle CPU/RAM** : calcul automatique des réglages sûrs selon la machine
+* **Architecture en modules autonomes** : chaque ajout fonctionne sans modifier le moteur d'origine, et Ortho4XP démarre même si un module manque
+
+### Installation et interface
+* **Lanceur graphique et installateur automatique** (Python 3.12, environnement isolé `venv`, lanceurs `.app` / `.vbs` / `.desktop`) et **installation Mac en un seul fichier DMG**
+* **Mode simple en 4 étapes** (carte du monde, choix de la qualité, vérifications, construction et installation automatique dans X-Plane), avec aperçu, file d'attente et construction de plusieurs tuiles en parallèle
+* **Interface bilingue français / anglais** (système O4_Lang), barre de menus native, thèmes de couleurs personnalisables, interface adaptée aux écrans 4K, console défilante, visualiseur CFG, profils de réglages en un clic, « Mes réglages »
+* **Sélection des tuiles autour d'un aéroport** (code OACI ou nom, rayon au choix) et saisie de plusieurs tuiles d'un coup
+
+### Eau et relief
+* **Générateur de patches mer photoréalistes** (fin du damier bleu et des triangles transparents) et **transparence de l'eau native X-Plane 12** (textures BC3 avec canal alpha)
+* **Module Bathymétrie** (EMODnet / SHOM)
+* **Module Altimétrie** : la procédure QGIS de 41 étapes manuelles réduite à un bouton
+* **Nouvelles sources de relief** : « X-Plane 12 relief », « Canada MRDEM-30 », « ANADEM »
+
+### Images
+* **Color Normalize**, **Color Check** et **Color Apply** : correction des couleurs adaptée au niveau de zoom et validée pour le HDR d'X-Plane 12
+* **Correction d'imagerie** : visualisation des textures, retouche externe, régénération ciblée
+* **Détection et remplacement des nuages** sur les images téléchargées
+* **Provider Score** : notation automatique de chaque image (bruit, compression, nuages, dérive, risque de jointure) et choix du meilleur fournisseur
+* **Récupération ciblée des morceaux d'image manquants** et téléchargements en parallèle
+
+### Outils
+* **Module Avancé (JOSM / QGIS)** : emprises de fournisseurs, nivellement, aéroports, édition OSM protégée
+* **Provider PCRS_IGN** et **générateur automatique de fichiers `.lay`**
+* **Assistant graphique de fichiers `.comb`**
+* **Bibliothèque de tuiles**, **Diagnostic** avec réparation en un clic, **Grand nettoyage**, déplacement de tuiles vers un autre disque
+* **Garde-fous avant construction** : place disque, disques et chemins accessibles, refus de modifier la liste des scènes quand X-Plane est ouvert
+* **Tutoriels PDF intégrés** et vérification des nouvelles versions
+
+### Contributions d'autres personnes, intégrées au projet
+Par honnêteté, les idées ou contributions suivantes reviennent à leurs auteurs, même lorsque Roland (Ypsos) les a réalisées ou intégrées :
+* **Jasum** — proposition et cahier des charges de l'assistant `.comb`
+* **Len0y** — proposition de séparer le « provider scoring » en une étape 4 dédiée
+* **domisilasol (Dominique)** — recompilation de `triangle.exe` pour Windows 64 bits, preset IGN Ortho France
+* **Jojo** (référence technique) et **Cricri** (tests Windows / Linux)
+
+### Portée de cette liste
+Cette liste identifie l'origine de chaque développement. Elle ne revendique **aucun droit** sur le moteur d'origine (calcul du maillage, génération DSF) créé par Oscar Pilote, ni sur le travail de Shred86 ou des contributeurs cités. Le droit d'auteur protège le **code et sa forme d'expression**, pas les idées elles-mêmes : la présente liste ne vaut ni brevet ni monopole sur une fonctionnalité.
+
+---
+
+## 16. CONDITIONS ADDITIONNELLES (ARTICLE 7 DE LA GPL v3)
+
+Les conditions ci-dessous sont ajoutées par Roland (Ypsos), en application de l'article 7 de la GPL v3, aux **seules parties du code dont il est l'auteur** : le code des créations listées à la section 15, ainsi que les fichiers et modules portant la notice « CREDIT — AUTHOR: Roland (Ypsos) » ou « © Roland (Ypsos) ».
+
+Elles ne s'appliquent pas au code d'Oscar Pilote ni de Shred86, et **ne retirent aucune des libertés de la GPL v3** : utiliser, étudier, modifier et redistribuer restent libres.
+
+**a) Attribution (art. 7 b)** — Toute copie ou version modifiée doit conserver les notices d'auteur de Roland (Ypsos) présentes dans les fichiers. Si le programme affiche des mentions légales (fenêtre « Crédits & Licence », « À propos » ou équivalent), une version dérivée doit continuer d'y afficher : « Contient des développements de Roland (Ypsos) — ORTHO4XP V3/V4 ».
+
+**b) Origine (art. 7 c)** — Il est interdit de présenter faussement l'origine de ces développements, notamment en s'en attribuant la création. Une version modifiée doit être clairement marquée comme modifiée, indiquer qu'elle diffère de la version officielle, et porter un nom différent de « ORTHO4XP V3 » et « ORTHO4XP V4 ».
+
+**c) Nom de l'auteur (art. 7 d)** — Le nom « Roland (Ypsos) » ne peut pas être utilisé pour promouvoir une version dérivée sans son accord écrit.
+
+**d) Noms du projet (art. 7 e)** — Aucun droit n'est accordé sur les noms « ORTHO4XP V3 », « ORTHO4XP V4 » et « ORTHO4XP (Ypsos) », ni sur la bannière du projet. Le nom « Ortho4XP » seul reste celui du projet d'origine d'Oscar Pilote.
+
+---
+
 > ⚠ **IMPORTANT — SAUVEGARDE**
 > Effectuez toujours une sauvegarde de votre système et de vos données avant toute opération de téléchargement, conversion, modification ou génération de tuiles.
 
@@ -288,7 +352,7 @@ Les éventuels projets dérivés sont indépendants de la version officielle et 
 
 Ortho4XP (versions V2, V3 and later) is an evolution and derivative work of Ortho4XP, created by **Oscar Pilote**, and distributed under the **GNU General Public License version 3 (GPL v3)**.
 
-This notice supplements the project's licensing information. It does not replace or modify the GPL v3 applicable to the code covered by that license.
+This notice supplements the project's licensing information. It does not replace or modify the GPL v3 applicable to the code covered by that license, except for the **additional terms of Section 16**, permitted by GPL v3 Section 7.
 
 In the event of any conflict between this notice and mandatory provisions of the GPL v3, **the GPL v3 shall prevail**.
 
@@ -298,12 +362,12 @@ Code covered by the GPL v3 may be studied, modified and redistributed under the 
 
 ## 1. DESCRIPTION, HISTORY AND CREDITS
 
-Ortho4XP V2, V3 and later versions form a continuous evolution developed from **Ortho4XP 1.40 (Shred)**, itself derived from the original Ortho4XP created by **Oscar Pilote**.
+Ortho4XP V2, V3 and later versions form a continuous evolution developed from **Ortho4XP 1.40 (Shred86)**, itself derived from the original Ortho4XP created by **Oscar Pilote**.
 
 ### Contribution and development chain
 
 * **Oscar Pilote** — creator of Ortho4XP — © 2014–2018
-* **Shred** — Ortho4XP 1.40 and intermediate contribution
+* **Shred86** — Ortho4XP 1.40 and intermediate contribution
 * **Roland (Ypsos)** — design, implementation, ergonomics, evolution and development of V2, V3 and later versions — © 2024–2026 and later versions
 
 **Original idea, design, implementation, ergonomics, evolution and development of V2, V3 and later versions: Roland (Ypsos).**
@@ -546,6 +610,70 @@ No payment is required to obtain or use this version.
 No financial contribution is mandatory.
 
 Derivative projects are independent from the official version and must be clearly identified as such.
+
+---
+
+## 15. ORIGINAL CREATIONS AND DEVELOPMENTS BY ROLAND (YPSOS)
+
+The items below were imagined, designed and implemented by **Roland (Ypsos)** for Ortho4XP V2, V3, V4 and later versions. They did not exist in Oscar Pilote's Ortho4XP nor in Shred86's version 1.40.
+
+### Architecture
+* **Event Bus**, build **Pipeline** and **Memory Manager** (real-time memory monitoring and automatic cache cleanup)
+* **CPU/RAM sentinel**: automatic safe settings computed for the machine
+* **Self-contained module architecture**: every addition works without modifying the original engine, and Ortho4XP still starts if a module is missing
+
+### Installation and interface
+* **Graphical launcher and automatic installer** (Python 3.12, isolated `venv` environment, `.app` / `.vbs` / `.desktop` launchers) and **one-file DMG installation on Mac**
+* **4-step simple mode** (world map, quality choice, checks, build and automatic installation into X-Plane), with preview, queue and parallel tile builds
+* **Bilingual French / English interface** (O4_Lang system), native menu bar, customisable colour themes, 4K-ready interface, scrolling console, CFG viewer, one-click setting profiles, "My settings"
+* **Tile selection around an airport** (ICAO code or name, chosen radius) and several tiles typed at once
+
+### Water and elevation
+* **Photorealistic sea patch generator** (no more blue checkerboard or transparent triangles) and **native X-Plane 12 water transparency** (BC3 textures with alpha channel)
+* **Bathymetry module** (EMODnet / SHOM)
+* **Elevation module**: the 41-step manual QGIS procedure reduced to one button
+* **New elevation sources**: "X-Plane 12 relief", "Canada MRDEM-30", "ANADEM"
+
+### Imagery
+* **Color Normalize**, **Color Check** and **Color Apply**: zoom-adapted colour correction validated for X-Plane 12 HDR
+* **Imagery correction**: texture viewing, external retouching, targeted regeneration
+* **Cloud detection and replacement** on downloaded images
+* **Provider Score**: automatic rating of every image (noise, compression, clouds, drift, seam risk) and selection of the best provider
+* **Targeted retrieval of missing image pieces** and parallel downloads
+
+### Tools
+* **Advanced module (JOSM / QGIS)**: provider extents, flattening, airports, protected OSM editing
+* **PCRS_IGN provider** and **automatic `.lay` file generator**
+* **Graphical `.comb` file wizard**
+* **Tile Library**, **Diagnostic** with one-click repair, **Big cleanup**, moving tiles to another disk
+* **Pre-build safeguards**: disk space, reachable disks and paths, refusal to change the scenery list while X-Plane is running
+* **Built-in PDF tutorials** and new-version check
+
+### Contributions by other people, integrated into the project
+In fairness, the following ideas or contributions belong to their authors, even where Roland (Ypsos) implemented or integrated them:
+* **Jasum** — proposal and specification of the `.comb` wizard
+* **Len0y** — proposal to separate provider scoring into a dedicated step 4
+* **domisilasol (Dominique)** — recompilation of `triangle.exe` for 64-bit Windows, IGN Ortho France preset
+* **Jojo** (technical reference) and **Cricri** (Windows / Linux testing)
+
+### Scope of this list
+This list identifies the origin of each development. It claims **no rights** over the original engine (mesh computation, DSF generation) created by Oscar Pilote, nor over the work of Shred86 or the contributors named. Copyright protects **code and its form of expression**, not ideas themselves: this list is neither a patent nor a monopoly over any feature.
+
+---
+
+## 16. ADDITIONAL TERMS (GPL v3 SECTION 7)
+
+The terms below are added by Roland (Ypsos), under Section 7 of the GPL v3, **solely to the parts of the code he authored**: the code of the creations listed in Section 15, and the files and modules bearing the notice "CREDIT — AUTHOR: Roland (Ypsos)" or "© Roland (Ypsos)".
+
+They do not apply to code by Oscar Pilote or Shred86, and **remove none of the GPL v3 freedoms**: use, study, modification and redistribution remain free.
+
+**a) Attribution (Sec. 7 b)** — Any copy or modified version must retain the Roland (Ypsos) author notices present in the files. If the program displays legal notices ("Credits & License", "About" or equivalent window), a derivative version must keep displaying: "Contains developments by Roland (Ypsos) — ORTHO4XP V3/V4".
+
+**b) Origin (Sec. 7 c)** — Misrepresenting the origin of these developments is prohibited, in particular by claiming their creation. A modified version must be clearly marked as modified, state that it differs from the official version, and use a name other than "ORTHO4XP V3" and "ORTHO4XP V4".
+
+**c) Author's name (Sec. 7 d)** — The name "Roland (Ypsos)" may not be used to promote a derivative version without his written consent.
+
+**d) Project names (Sec. 7 e)** — No rights are granted to the names "ORTHO4XP V3", "ORTHO4XP V4" and "ORTHO4XP (Ypsos)", nor to the project banner. The name "Ortho4XP" alone remains that of Oscar Pilote's original project.
 
 ---
 

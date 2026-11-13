@@ -1,4 +1,23 @@
 # -*- coding: utf-8 -*-
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CRÉDIT — AUTEUR : Roland (Ypsos) — Novembre 2026
+# Module conçu et spécifié par Roland (Ypsos) pour Ortho4XP V4.
+# Cette notice d'auteur et de copyright doit être conservée
+# conformément à la GPLv3.
+# Licence : GPLv3 + conditions additionnelles (art. 7),
+# voir AVERTISSEMENT_LICENCE_LEGAL.md, section 16.
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CREDIT — AUTHOR: Roland (Ypsos) — November 2026
+# Module designed and specified by Roland (Ypsos) for Ortho4XP V4.
+# This authorship and copyright notice must be retained
+# in accordance with GPLv3.
+# License: GPLv3 + additional terms (Sec. 7),
+# see AVERTISSEMENT_LICENCE_LEGAL.md, Section 16.
+# ============================================================
 # ------------------------------------------------------------------------------
 # O4_Route_Utils.py
 # Choisir des tuiles autour d'un aéroport (novembre 2026).

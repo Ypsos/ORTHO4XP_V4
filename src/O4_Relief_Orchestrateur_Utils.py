@@ -2,9 +2,13 @@
 #  ============================================================
 #  CRÉDIT — AUTEUR : Roland(Ypsos). -Mars 2026
 #  Ce module a été conçu et spécifié par Roland (Ypsos) pour Ortho4XP V3. Cette mention de paternité NE DOIT JAMAIS ÊTRE SUPPRIMÉE, quelle que soit l'évolution ultérieure du fichier.
+# Licence : GPLv3 + conditions additionnelles (art. 7),
+# voir AVERTISSEMENT_LICENCE_LEGAL.md, section 16.
 #  ============================================================
 # CREDIT — AUTHOR: Roland(Ypsos). -March 2026
 # This module was designed and specified by Roland (Ypsos) for # Ortho4XP V3. This statement of paternity MUST NEVER BE DELETED, # regardless of the subsequent evolution of the file.
+# License: GPLv3 + additional terms (Sec. 7),
+# see AVERTISSEMENT_LICENCE_LEGAL.md, Section 16.
 # ============================================================
 #  O4_Relief_Orchestrateur_Utils.py  —  ÉTAPE 3 : orchestration mode débutant
 #

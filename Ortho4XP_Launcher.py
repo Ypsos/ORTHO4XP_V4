@@ -1,5 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CRÉDIT — AUTEUR : Roland (Ypsos) — Avril 2026
+# Module conçu et spécifié par Roland (Ypsos) pour Ortho4XP V3.
+# Cette notice d'auteur et de copyright doit être conservée
+# conformément à la GPLv3.
+# Licence : GPLv3 + conditions additionnelles (art. 7),
+# voir AVERTISSEMENT_LICENCE_LEGAL.md, section 16.
+# ============================================================
+# Copyright (c) 2024-2026 Roland (Ypsos)
+#
+# CREDIT — AUTHOR: Roland (Ypsos) — April 2026
+# Module designed and specified by Roland (Ypsos) for Ortho4XP V3.
+# This authorship and copyright notice must be retained
+# in accordance with GPLv3.
+# License: GPLv3 + additional terms (Sec. 7),
+# see AVERTISSEMENT_LICENCE_LEGAL.md, Section 16.
+# ============================================================
 import os
 import sys
 import platform
@@ -544,16 +563,24 @@ class Launcher(tk.Tk):
         """
         from tkinter import colorchooser
 
+        # FR / EN : langue active du lanceur (aucun fichier de langue touché)
+        _fr = (self._current_lang_code() == "FR")
+
+        def _T(fr, en):
+            return fr if _fr else en
+
         win = tk.Toplevel(self)
-        win.title("🎨 Éditeur Thème Personnalisée")
+        win.title(_T("🎨 Éditeur Thème Personnalisée", "🎨 Custom theme editor"))
         win.configure(bg=BG_GLOBAL)
         win.resizable(True, True)
         win.protocol("WM_DELETE_WINDOW", lambda: [win.grab_release(), win.destroy()])
 
-        tk.Label(win, text="🎨  Éditeur Thème Personnalisée",
+        tk.Label(win, text=_T("🎨  Éditeur Thème Personnalisée",
+                              "🎨  Custom theme editor"),
                  font=("Helvetica", 15, "bold"),
                  fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(12, 4))
-        tk.Label(win, text="Cliquez sur une couleur pour ouvrir la palette",
+        tk.Label(win, text=_T("Cliquez sur une couleur pour ouvrir la palette",
+                              "Click a colour to open the palette"),
                  font=("Helvetica", 11), fg="#e8f0ec", bg=BG_GLOBAL).pack(pady=(0, 8))
 
         # ── Scrollable ────────────────────────────────────────────────────
@@ -579,23 +606,23 @@ class Launcher(tk.Tk):
         cv_s.bind_all("<Button-5>",   _scroll)
 
         KEY_LABELS = {
-            "bg":           "Fond principal",
-            "bg_secondary": "Fond secondaire",
-            "fg":           "Texte principal",
-            "fg_secondary": "Texte secondaire",
-            "btn_bg":       "Fond boutons",
-            "btn_fg":       "Texte boutons",
-            "btn_hover":    "Boutons survol",
-            "btn_active":   "Boutons actifs",
-            "console_bg":   "Console fond",
-            "console_fg":   "Console texte",
-            "accent":       "Couleur application",
-            "warning":      "Avertissement",
-            "error":        "Erreur",
-            "success":      "Succès",
-            "canvas_bg":    "Canvas fond",
-            "border":       "Bordures",
-            "shadow":       "Ombres",
+            "bg":           _T("Fond principal", "Main background"),
+            "bg_secondary": _T("Fond secondaire", "Secondary background"),
+            "fg":           _T("Texte principal", "Main text"),
+            "fg_secondary": _T("Texte secondaire", "Secondary text"),
+            "btn_bg":       _T("Fond boutons", "Button background"),
+            "btn_fg":       _T("Texte boutons", "Button text"),
+            "btn_hover":    _T("Boutons survol", "Button hover"),
+            "btn_active":   _T("Boutons actifs", "Button pressed"),
+            "console_bg":   _T("Console fond", "Console background"),
+            "console_fg":   _T("Console texte", "Console text"),
+            "accent":       _T("Couleur application", "Accent colour"),
+            "warning":      _T("Avertissement", "Warning"),
+            "error":        _T("Erreur", "Error"),
+            "success":      _T("Succès", "Success"),
+            "canvas_bg":    _T("Canvas fond", "Canvas background"),
+            "border":       _T("Bordures", "Borders"),
+            "shadow":       _T("Ombres", "Shadows"),
         }
 
         theme_dict = self._tm.get_custom_theme()
@@ -609,7 +636,7 @@ class Launcher(tk.Tk):
             current = hex_var.get()
             result = colorchooser.askcolor(
                 color=current,
-                title=f"Choisir : {KEY_LABELS.get(key, key)}",
+                title=_T("Choisir : ", "Choose: ") + KEY_LABELS.get(key, key),
                 parent=win
             )
             # Forcer fermeture palette et retour focus sur éditeur
@@ -625,7 +652,8 @@ class Launcher(tk.Tk):
                     pass
 
         # ── Ligne d'en-tête ───────────────────────────────────────────────
-        for col, txt in enumerate(["Élément", "Couleur actuelle"]):
+        for col, txt in enumerate([_T("Élément", "Item"),
+                                   _T("Couleur actuelle", "Current colour")]):
             tk.Label(inner, text=txt, bg=BG_GLOBAL, fg="#a6e3a1",
                      font=("Helvetica", 10, "bold")).grid(
                      row=0, column=col, padx=12, pady=4, sticky="w")
@@ -667,13 +695,15 @@ class Launcher(tk.Tk):
         btn_frame.columnconfigure(1, weight=1)
         btn_frame.columnconfigure(2, weight=1)
 
-        _ctk_button(btn_frame, text="💾  Enregistrer Thème Personnalisée",
+        _ctk_button(btn_frame, text=_T("💾  Enregistrer Thème Personnalisée",
+                                       "💾  Save custom theme"),
                     command=lambda: self._save_custom_colors(win)
                     ).grid(row=0, column=0, padx=6, pady=4, sticky="we")
-        _ctk_button(btn_frame, text="🔄 Réinitialiser Roland",
+        _ctk_button(btn_frame, text=_T("🔄 Réinitialiser Roland",
+                                       "🔄 Reset to Roland"),
                     command=lambda: self._reset_custom_theme(win)
                     ).grid(row=0, column=1, padx=6, pady=4, sticky="we")
-        _ctk_button(btn_frame, text="Annuler",
+        _ctk_button(btn_frame, text=_T("Annuler", "Cancel"),
                     command=lambda: [win.grab_release(), win.destroy()]
                     ).grid(row=0, column=2, padx=6, pady=4, sticky="we")
 
@@ -683,7 +713,8 @@ class Launcher(tk.Tk):
         win.resizable(True, True)
         win.grab_set()
         win.focus_force()
-        self._log("🎨 Éditeur Personnalisée ouvert.")
+        self._log(_T("🎨 Éditeur Personnalisée ouvert.",
+                     "🎨 Custom theme editor opened."))
 
     def _save_custom_colors(self, win):
         """Sauvegarde toutes les couleurs dans THEMES['custom'] + fichier JSON"""
@@ -700,7 +731,9 @@ class Launcher(tk.Tk):
             # Sauvegarde fichier custom_theme.json à la racine Ortho4XP
             if hasattr(self._tm, "save_custom_theme_to_file"):
                 self._tm.save_custom_theme_to_file()
-            self._log("✅ Thème Personnalisée enregistré !")
+            self._log("✅ Thème Personnalisée enregistré !"
+                      if self._current_lang_code() == "FR"
+                      else "✅ Custom theme saved!")
             try: win.grab_release()
             except: pass
             win.destroy()
@@ -711,7 +744,9 @@ class Launcher(tk.Tk):
     def _reset_custom_theme(self, win):
         if hasattr(self._tm, "reset_custom_to_roland"):
             self._tm.reset_custom_to_roland()
-        self._log("🔄 Thème custom réinitialisé aux couleurs Roland.")
+        self._log("🔄 Thème custom réinitialisé aux couleurs Roland."
+                  if self._current_lang_code() == "FR"
+                  else "🔄 Custom theme reset to Roland colours.")
         try: win.grab_release()
         except: pass
         win.destroy()
