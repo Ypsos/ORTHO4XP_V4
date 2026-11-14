@@ -130,9 +130,17 @@ def _open_log_for_subprocess():
         return None
 
 
+# Détail du dernier échec de _check_modules_ok() (module en cause, chemin
+# d'où il est chargé, ou délai dépassé). Vide si la vérification a réussi.
+_LAST_CHECK_ERROR = ""
+
+
 def _check_modules_ok():
     """Vérifie que les modules essentiels sont importables dans le venv."""
+    global _LAST_CHECK_ERROR
+    _LAST_CHECK_ERROR = ""
     if not VENV_PY.exists():
+        _LAST_CHECK_ERROR = "venv introuvable / venv not found : {}".format(VENV_PY)
         return False
     try:
         mods = ", ".join(ESSENTIAL_MODULES)
@@ -146,8 +154,17 @@ def _check_modules_ok():
             [str(VENV_PY), "-c", code],
             capture_output=True, timeout=8
         )
+        if r.returncode != 0:
+            err = (r.stderr or b"").decode("utf-8", errors="replace")
+            lignes = [l for l in err.splitlines() if l.strip()]
+            _LAST_CHECK_ERROR = "\n".join(lignes[-6:])
         return r.returncode == 0
-    except Exception:
+    except subprocess.TimeoutExpired:
+        _LAST_CHECK_ERROR = ("Délai de vérification dépassé (8 s) / "
+                             "check timed out (8 s)")
+        return False
+    except Exception as e:
+        _LAST_CHECK_ERROR = "{}: {}".format(type(e).__name__, e)
         return False
 
 
@@ -777,6 +794,10 @@ class Installer:
         # pip avait échoué. On vérifie maintenant les modules indispensables.
         if not _check_modules_ok():
             self._req_failed = True
+            if _LAST_CHECK_ERROR:
+                self.log("🔎 Détail de la vérification / Check details :")
+                for _l in _LAST_CHECK_ERROR.splitlines():
+                    self.log("   " + _l)
             self._finish(
                 False,
                 "❌ Modules Python indispensables manquants dans le venv "
